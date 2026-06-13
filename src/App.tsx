@@ -60,6 +60,24 @@ export default function App() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isDbReady, setIsDbReady] = useState<boolean>(false);
   const [lowStockWarningCount, setLowStockWarningCount] = useState<number>(0);
+  const [liveDateStr, setLiveDateStr] = useState<string>('');
+
+  // Live Timer
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const options: Intl.DateTimeFormatOptions = { 
+        year: 'numeric', month: '2-digit', day: '2-digit', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: true 
+      };
+      setLiveDateStr(now.toLocaleString('ar-EG', options));
+    };
+    
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Load user session and settings on launch
   useEffect(() => {
@@ -369,15 +387,9 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3.5">
-            {/* Server Timestamp Offline HUD */}
-            <div className="hidden md:flex items-center gap-2 bg-emerald-50 text-emerald-800 text-xs px-3 py-1.5 rounded-xl font-bold border border-emerald-100">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              <span>قاعدة مبيعات نشطة (IndexedDB)</span>
-            </div>
-
-            <div className="flex items-center gap-1 text-gray-400 pointer-events-none font-semibold text-xs bg-slate-50 px-2.5 py-1.5 rounded-xl border border-gray-100">
-              <Clock size={13} className="text-[#2E86AB]" />
-              <span>التوقيت المحلي مستقر</span>
+            <div className="flex items-center gap-1.5 text-gray-800 pointer-events-none font-bold text-sm bg-slate-100 px-3 py-1.5 rounded-xl border border-gray-200">
+              <Clock size={15} className="text-[#2E86AB]" />
+              <span className="font-mono mt-0.5">{liveDateStr}</span>
             </div>
           </div>
         </header>
