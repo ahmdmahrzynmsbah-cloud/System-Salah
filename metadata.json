@@ -1,0 +1,6 @@
+{
+  "name": "نظام إدارة قطع الغيار والميكانيكا",
+  "description": "نظام متكامل لإدارة محل قطع غيار سيارات وميكانيكا باستخدام IndexedDB وميزات طباعة الفواتير والباركود وتتبع المديونيات",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

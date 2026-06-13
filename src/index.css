@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Tajawal", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Courier New", monospace;
+}
+
+/* Force all form elements and options to utilize the beautiful Tajawal primary font */
+input, select, textarea, button, option {
+  font-family: "Tajawal", "Inter", system-ui, -apple-system, sans-serif !important;
+}
+
+/* Customize weights and alignments for data inputs */
+input[type="text"], 
+input[type="number"], 
+input[type="tel"], 
+input[type="email"], 
+select, 
+textarea {
+  font-family: "Tajawal", "Inter", system-ui, -apple-system, sans-serif !important;
+  font-weight: 500 !important; /* Perfect medium-bold weights as requested */
+}
+
+/* Polish password controls: use Tajawal, set weight to bold/extra-bold and handle tracking */
+input[type="password"] {
+  font-family: "Tajawal", "Inter", system-ui, -apple-system, sans-serif !important;
+  font-weight: 700 !important;
+}
+
+/* Highly structured placeholder fixes to align the font-weight and stop Arabic text from stretching */
+::placeholder {
+  font-family: "Tajawal", "Inter", system-ui, -apple-system, sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: normal !important;
+  font-size: 13px !important;
+}
+
+input[type="password"]::placeholder {
+  letter-spacing: normal !important;
+}
+
+/* Custom Styles for Printing */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  /* Remove default margins/headers in print if possible */
+  @page {
+    margin: 1.5cm;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+/* Hide scrollbars for slick layouts but keep scrollable */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
