@@ -17,7 +17,8 @@ import {
   CheckCircle,
   AlertTriangle,
   XCircle,
-  Clock
+  Clock,
+  Truck
 } from 'lucide-react';
 import { 
   seedDemoDataIfNeeded, 
@@ -34,12 +35,22 @@ import Products from './components/Products';
 import Invoices from './components/Invoices';
 import DebtLedger from './components/DebtLedger';
 import TransactionsLog from './components/TransactionsLog';
+import Suppliers from './components/Suppliers';
 import Settings from './components/Settings';
 
 interface Toast {
   id: number;
   message: string;
   type: 'success' | 'error' | 'warning';
+}
+
+interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  date: Date;
+  isRead: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -61,6 +72,19 @@ export default function App() {
   const [isDbReady, setIsDbReady] = useState<boolean>(false);
   const [lowStockWarningCount, setLowStockWarningCount] = useState<number>(0);
   const [liveDateStr, setLiveDateStr] = useState<string>('');
+  
+  // App Notifications State
+  const [notifications, setNotifications] = useState<AppNotification[]>([
+    {
+      id: 'welcome_sys',
+      title: 'مرحباً بك في النظام',
+      message: 'نظام إدارة المخزون والمبيعات يعمل بكفاءة.',
+      type: 'info',
+      date: new Date(),
+      isRead: false
+    }
+  ]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Live Timer
   useEffect(() => {
@@ -144,16 +168,47 @@ export default function App() {
       const allProducts = await getAllRecords("products");
       const lowStockProducts = allProducts.filter((p) => p.quantity < 5);
       setLowStockWarningCount(lowStockProducts.length);
+
+      // Reflect low stock in notifications safely
+      if (lowStockProducts.length > 0) {
+        setNotifications(prev => {
+          const hasLowStock = prev.some(n => n.id === 'low-stock');
+          if (hasLowStock) return prev; // Already notified
+          return [{
+            id: 'low-stock',
+            title: 'تنبيه النواقص بالأسهم',
+            message: `يوجد ${lowStockProducts.length} صنف/أصناف مخزونها أقل من الحد الأدنى.`,
+            type: 'warning',
+            date: new Date(),
+            isRead: false
+          }, ...prev];
+        });
+      } else {
+        setNotifications(prev => prev.filter(n => n.id !== 'low-stock'));
+      }
     } catch (e) {
       console.error(e);
     }
   };
 
-  // Modern Toast system
+  // Modern Toast & Notification system
   const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     
+    // Automatically log serious issues into bell notifications
+    if (type === 'error' || type === 'warning') {
+      const notifId = Date.now().toString() + Math.random();
+      setNotifications(prev => [{
+        id: notifId,
+        title: type === 'error' ? 'مشكلة بالعمليات' : 'تنبيه تشغيلي',
+        message: message,
+        type: type,
+        date: new Date(),
+        isRead: false
+      }, ...prev].slice(0, 50));
+    }
+
     // Auto-remove after 4 seconds
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
@@ -255,6 +310,7 @@ export default function App() {
     { id: 'dashboard', label: 'لوحة التحكم', icon: BarChart3 },
     { id: 'invoices', label: 'المبيعات و الفواتير', icon: Receipt },
     { id: 'products', label: 'مستودع المنتجات', icon: Package, badgeKey: 'products' },
+    { id: 'suppliers', label: 'الموردين', icon: Truck },
     { id: 'debts', label: 'دفتر المديونيات والذمم', icon: CreditCard },
     { id: 'transactions', label: 'سجل العمليات العام', icon: History },
     { id: 'settings', label: 'إعدادات النظام والطباعة', icon: SettingsIcon },
@@ -387,6 +443,77 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3.5">
+            {/* Notifications Dropdown Container */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="relative p-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-gray-100 transition-colors cursor-pointer text-gray-500 hover:text-[#2E86AB]"
+              >
+                <Bell size={20} />
+                {notifications.some(n => !n.isRead) && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-50 animate-pulse"></span>
+                )}
+              </button>
+
+              {isNotificationsOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsNotificationsOpen(false)} 
+                  />
+                  <div className="absolute left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 z-50 overflow-hidden flex flex-col max-h-[85vh]">
+                    <div className="px-4 py-3 bg-[#F8FAFC] border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="font-bold text-gray-800">الإشعارات</h3>
+                      <button 
+                        onClick={() => {
+                          setNotifications(prev => prev.map(n => ({...n, isRead: true})));
+                        }}
+                        className="text-[10px] text-[#2E86AB] hover:underline font-bold bg-transparent border-none cursor-pointer"
+                      >
+                        تحديد الكل كمقروء
+                      </button>
+                    </div>
+                    
+                    <div className="overflow-y-auto flex-1">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center text-gray-400 text-sm font-semibold">
+                          لا توجد إشعارات حالياً
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <div 
+                            key={n.id} 
+                            className={`p-3 border-b last:border-0 hover:bg-gray-50 transition-colors ${!n.isRead ? 'bg-blue-50/50' : ''}`}
+                            onClick={() => {
+                              setNotifications(prev => prev.map(item => item.id === n.id ? {...item, isRead: true} : item));
+                            }}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <div className="mt-0.5">
+                                {n.type === 'info' && <Bell size={14} className="text-[#2E86AB]" />}
+                                {n.type === 'success' && <CheckCircle size={14} className="text-emerald-500" />}
+                                {n.type === 'warning' && <AlertTriangle size={14} className="text-amber-500" />}
+                                {n.type === 'error' && <XCircle size={14} className="text-rose-500" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-start mb-1 gap-2">
+                                  <h4 className={`text-xs font-bold ${!n.isRead ? 'text-gray-900' : 'text-gray-700'}`}>{n.title}</h4>
+                                  <span className="text-[9px] text-gray-400 whitespace-nowrap font-mono">{n.date.toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}</span>
+                                </div>
+                                <p className="text-[11px] text-gray-500 leading-relaxed">{n.message}</p>
+                              </div>
+                              {!n.isRead && <div className="w-1.5 h-1.5 bg-[#2E86AB] rounded-full mt-1.5 flex-shrink-0" />}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Live Clock Component */}
             <div className="flex items-center gap-1.5 text-gray-800 pointer-events-none font-bold text-sm bg-slate-100 px-3 py-1.5 rounded-xl border border-gray-200">
               <Clock size={15} className="text-[#2E86AB]" />
               <span className="font-mono mt-0.5">{liveDateStr}</span>
@@ -418,6 +545,10 @@ export default function App() {
               onToast={showToast} 
               shopSettings={shopSettings} 
             />
+          )}
+
+          {activeTab === 'suppliers' && (
+            <Suppliers onToast={showToast} currentUser={currentUser} onAddLog={handleAddLog} />
           )}
 
           {activeTab === 'debts' && (

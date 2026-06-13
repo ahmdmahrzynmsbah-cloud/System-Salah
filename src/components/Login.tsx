@@ -239,7 +239,7 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
             }`}
           >
             <Users size={14} />
-            دخول الموظفين والسر السريع
+            دخول الموظفين
           </button>
           
           <button
@@ -250,7 +250,7 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
             }`}
           >
             <ShieldCheck size={14} />
-            دخول المشرف (الاسم + المرور)
+            دخول المشرف
           </button>
         </div>
 
@@ -448,31 +448,6 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
             </button>
           </form>
         )}
-
-        {/* Demo Hints */}
-        <div className="bg-slate-50 p-4 border border-slate-200 rounded-2xl text-right space-y-2.5">
-          <div className="flex items-center justify-between border-b border-gray-200/60 pb-1.5">
-            <span className="text-xs font-bold text-gray-500 flex items-center gap-1">
-              <HelpCircle size={14} className="text-[#2E86AB]" />
-              بيانات الدخول الافتراضية للتجربة:
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-2 bg-blue-50/50 rounded-xl border border-blue-100/60 space-y-1">
-              <p className="font-extrabold text-[#2E86AB]">حساب المشرف (المدير):</p>
-              <p className="text-gray-600">اسم المستخدم: <strong className="font-mono text-gray-900 bg-gray-200/70 px-1 py-0.5 rounded">admin</strong></p>
-              <p className="text-gray-600">الرقم السري: <strong className="font-mono text-gray-900 bg-gray-200/70 px-1 py-0.5 rounded">1234</strong></p>
-            </div>
-            <div className="p-2 bg-emerald-50/50 rounded-xl border border-emerald-100/60 space-y-1">
-              <p className="font-extrabold text-[#4CAF50]">حساب الموظف العادي:</p>
-              <p className="text-gray-600">الدخول السريع بالرقم السري:</p>
-              <p className="text-gray-600">الرقم السري: <strong className="font-mono text-gray-900 bg-gray-200/70 px-1 py-0.5 rounded">1234</strong></p>
-            </div>
-          </div>
-          <p className="text-[11px] text-gray-400 font-semibold leading-relaxed text-center pt-1">
-            ⚠️ يمكنك تعديل كل أسماء وبيانات الموظفين والرموز السرية بالكامل من شاشة <span className="text-[#2E86AB]">الإعدادات ⚙️</span> بعد الدخول بحساب المشرف.
-          </p>
-        </div>
 
       </div>
     </div>

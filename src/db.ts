@@ -52,6 +52,15 @@ export interface Debt {
   lastInvoiceDate: string;
 }
 
+export interface Supplier {
+  id?: number;
+  name: string;
+  phone: string;
+  companyName: string;
+  balance: number;
+  notes: string;
+}
+
 export interface Transaction {
   id?: number;
   date: string;
@@ -79,7 +88,7 @@ export interface User {
 }
 
 const DB_NAME = "AutoPartsDB";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export function initDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -115,6 +124,12 @@ export function initDB(): Promise<IDBDatabase> {
         const debtStore = db.createObjectStore("debtLedger", { keyPath: "id", autoIncrement: true });
         debtStore.createIndex("customerPhone", "customerPhone", { unique: true });
         debtStore.createIndex("customerName", "customerName", { unique: false });
+      }
+
+      if (!db.objectStoreNames.contains("suppliers")) {
+        const supplierStore = db.createObjectStore("suppliers", { keyPath: "id", autoIncrement: true });
+        supplierStore.createIndex("phone", "phone", { unique: true });
+        supplierStore.createIndex("name", "name", { unique: false });
       }
 
       if (!db.objectStoreNames.contains("transactions")) {
@@ -330,7 +345,7 @@ export async function clearOfficeDatabase(mode: 'partial' | 'full' | 'pure_empty
   const db = await initDB();
   const targetStores = mode === 'partial'
     ? ["invoices", "debtLedger", "transactions"]
-    : ["products", "invoices", "debtLedger", "transactions", "settings", "users"];
+    : ["products", "invoices", "debtLedger", "transactions", "settings", "users", "suppliers"];
   
   // Clear all target stores within a single atomic write transaction
   await new Promise<void>((resolve, reject) => {
