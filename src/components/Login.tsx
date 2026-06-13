@@ -139,14 +139,15 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
     }
   };
 
-  // Handle Standard Login (Username + Password)
-  const handleStandardLogin = async (e: React.FormEvent) => {
+  // Handle Unified Login (Username + Password) for specific roles
+  const handleRoleLogin = async (e: React.FormEvent, targetRole: 'admin' | 'employee') => {
     e.preventDefault();
     const enteredUser = username.trim();
-    const enteredPass = standardPassword.trim();
+    // the password variable is different depending on tab (standardPassword vs password)
+    const enteredPass = targetRole === 'admin' ? standardPassword.trim() : password.trim();
 
     if (!enteredUser || !enteredPass) {
-      onToast("يرجى كتابة اسم المستخدم والرقم السري", "warning");
+      onToast("يرجى إدخال اسم المستخدم وكلمة المرور", "warning");
       return;
     }
 
@@ -158,6 +159,8 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
       const normEnteredUser = normalizeArabicText(enteredUser);
 
       const matched = allUsers.find(u => {
+        if (u.role !== targetRole) return false;
+
         const dbUser = u.username.toLowerCase();
         const normDbUser = normalizeArabicText(dbUser);
         
@@ -178,11 +181,11 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
       });
 
       if (matched) {
-        onToast(`مرحباً بك مشرفنا العزيز ${matched.username}! تم الدخول بنجاح`, "success");
+        onToast(`مرحباً بك ${matched.username}! تم الدخول بنجاح`, "success");
         onLoginSuccess({ username: matched.username, role: matched.role });
         localStorage.setItem("autoPartsUser", JSON.stringify({ username: matched.username, role: matched.role }));
       } else {
-        onToast("اسم المستخدم أو كلمة المرور غير صحيحة مطلقاً!", "error");
+        onToast("اسم المستخدم أو كلمة المرور غير صحيحة!", "error");
       }
     } catch (err) {
       console.error(err);
@@ -282,91 +285,54 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
           </div>
         )}
 
-        {/* 1. Quick Password-Only Login */}
+        {/* 1. Employee Login (Username + Password) */}
         {loginMode === 'quick' && ambiguousUsers.length === 0 && (
-          <div className="space-y-4">
-            
-            <form onSubmit={handleQuickLogin} className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-gray-600 text-xs font-bold leading-5 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
-                    <Lock size={13} className="text-[#2E86AB]" />
-                    الرقم السري الخاص بك (Password)
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowPinPad(!showPinPad)}
-                    className="text-[10px] text-[#2E86AB] hover:underline flex items-center gap-1 font-bold"
-                  >
-                    <Keyboard size={11} />
-                    {showPinPad ? 'إخفاء أزرار الأرقام' : 'إظهار أزرار الأرقام'}
-                  </button>
-                </label>
-                
-                <input
-                  ref={quickInputRef}
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="اكتب رمزك السري المخصص لك للدخول..."
-                  className="w-full px-4 py-3 border border-gray-200 outline-hidden rounded-2xl text-center text-base font-extrabold tracking-widest focus:border-[#2E86AB] focus:ring-4 focus:ring-blue-100/50 bg-gray-50/20"
-                  required
-                />
-              </div>
+          <form onSubmit={(e) => handleRoleLogin(e, 'employee')} className="space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 text-xs font-bold leading-5 flex items-center gap-1">
+                <User size={13} className="text-[#2E86AB]" />
+                اسم المستخدم
+              </label>
+              <input
+                ref={quickInputRef}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="أدخل اسم المستخدم للموظف..."
+                className="w-full px-4 py-2.5 border border-gray-200 outline-hidden rounded-xl text-sm font-semibold focus:border-[#2E86AB]"
+                required
+              />
+            </div>
 
-              {/* Pin Pad */}
-              {showPinPad && (
-                <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-100 grid grid-cols-3 gap-2 w-full max-w-sm mx-auto shadow-inner">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => handlePinPadClick(num)}
-                      className="py-2.5 bg-white border border-gray-100 hover:bg-slate-100 font-extrabold text-[#1E2A3A] rounded-xl text-sm shadow-xs cursor-pointer active:scale-95 transition-all text-center"
-                    >
-                      {num}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => handlePinPadClick('clear')}
-                    className="py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold rounded-xl text-xs shadow-xs cursor-pointer active:scale-95 transition-all text-center"
-                  >
-                    مسح الكل
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePinPadClick('0')}
-                    className="py-2.5 bg-white border border-gray-100 hover:bg-slate-100 font-extrabold text-[#1E2A3A] rounded-xl text-sm shadow-xs cursor-pointer active:scale-95 transition-all text-center"
-                  >
-                    0
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePinPadClick('back')}
-                    className="py-2.5 bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold rounded-xl text-xs shadow-xs cursor-pointer active:scale-95 transition-all text-center flex items-center justify-center"
-                    title="حذف رقم"
-                  >
-                    ⌫
-                  </button>
-                </div>
-              )}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 text-xs font-bold leading-5 flex items-center gap-1">
+                <Lock size={13} className="text-[#2E86AB]" />
+                كلمة المرور
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="أدخل كلمة المرور الخاصة بك..."
+                className="w-full px-4 py-2.5 border border-gray-200 outline-hidden rounded-xl text-sm font-semibold focus:border-[#2E86AB]"
+                required
+              />
+            </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 bg-[#2E86AB] hover:bg-[#1E2A3A] transition-all text-white font-extrabold rounded-2xl text-sm cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-98"
-              >
-                <LogIn size={16} />
-                {isLoading ? 'جاري التحقق من الهوية مبيعات...' : 'دخول فوري بكلمة المرور'}
-              </button>
-            </form>
-          </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 bg-[#2E86AB] hover:bg-[#1E2A3A] transition-all text-white font-extrabold rounded-2xl text-sm cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-98"
+            >
+              <LogIn size={16} />
+              {isLoading ? 'جاري التحقق من الهوية...' : 'تسجيل دخول الموظف'}
+            </button>
+          </form>
         )}
 
         {/* 2. Standard Traditional Username/Password login login */}
         {loginMode === 'standard' && ambiguousUsers.length === 0 && (
-          <form onSubmit={handleStandardLogin} className="space-y-4">
+          <form onSubmit={(e) => handleRoleLogin(e, 'admin')} className="space-y-4">
             
             {/* Quick Supervisor Profile badges */}
             {users.filter(u => u.role === 'admin').length > 0 && (

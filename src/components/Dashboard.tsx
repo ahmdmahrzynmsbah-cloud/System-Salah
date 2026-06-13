@@ -9,7 +9,7 @@ import {
   TrendingDown,
   UserCheck
 } from 'lucide-react';
-import { getAllRecords, Product, Invoice, Transaction, Debt } from '../db';
+import { subscribeToStore, Product, Invoice, Transaction, Debt } from '../db';
 
 interface DashboardProps {
   onNavigate: (tab: string) => void;
@@ -29,45 +29,41 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
   const [lowStockCount, setLowStockCount] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const unsubProducts = subscribeToStore("products", (data: Product[]) => {
+      setProducts(data);
+      setTotalProducts(data.length);
+      setLowStockCount(data.filter((p) => p.quantity < 5).length);
+    });
 
-  const loadData = async () => {
-    try {
-      const allProducts = await getAllRecords("products");
-      const allInvoices = await getAllRecords("invoices");
-      const allTransactions = await getAllRecords("transactions");
-      const allDebts = await getAllRecords("debtLedger");
-
-      setProducts(allProducts);
-      setInvoices(allInvoices);
-      setTransactions(allTransactions);
-      setDebts(allDebts);
-
-      // Calculations
-      setTotalProducts(allProducts.length);
-
-      // Today's Date in format DD/MM/YYYY
+    const unsubInvoices = subscribeToStore("invoices", (data: Invoice[]) => {
+      setInvoices(data);
       const today = new Date();
       const dd = String(today.getDate()).padStart(2, '0');
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const yyyy = today.getFullYear();
       const todayStr = `${dd}/${mm}/${yyyy}`;
-
-      const salesToday = allInvoices
-        .filter((inv: Invoice) => inv.date.startsWith(todayStr))
-        .reduce((sum: number, inv: Invoice) => sum + inv.total, 0);
+      const salesToday = data
+        .filter((inv) => inv.date.startsWith(todayStr))
+        .reduce((sum, inv) => sum + inv.total, 0);
       setTodaySales(salesToday);
+    });
 
-      const sumDebts = allDebts.reduce((sum: number, d: Debt) => sum + d.totalDebt, 0);
-      setTotalDebts(sumDebts);
+    const unsubTransactions = subscribeToStore("transactions", (data: Transaction[]) => {
+      setTransactions(data);
+    });
 
-      const lowStock = allProducts.filter((p: Product) => p.quantity < 5).length;
-      setLowStockCount(lowStock);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+    const unsubDebts = subscribeToStore("debtLedger", (data: Debt[]) => {
+      setDebts(data);
+      setTotalDebts(data.reduce((sum, d) => sum + d.totalDebt, 0));
+    });
+
+    return () => {
+      unsubProducts();
+      unsubInvoices();
+      unsubTransactions();
+      unsubDebts();
+    };
+  }, []);
 
   // Get products with stock less than 5
   const dangerProducts = products.filter(p => p.quantity < 5);
