@@ -337,7 +337,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
         await updateRecord("products", selectedProduct?.id, itemData);
         // Detect price update
         if (selectedProduct && selectedProduct.sellingPrice !== Number(sellingPrice)) {
-          await onAddLog('edit_price', `تعديل السعر لـ ${name}: من ${selectedProduct.sellingPrice} إلى ${sellingPrice} ر.س`, 0);
+          await onAddLog('edit_price', `تعديل السعر لـ ${name}: من ${selectedProduct.sellingPrice} إلى ${sellingPrice} ج.م`, 0);
         } else {
           await onAddLog('system', `تعديل مستودع للقطعة: ${name}`, 0);
         }
@@ -517,8 +517,8 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
                         </div>
                       </td>
                       <td className="p-4 text-left font-mono">
-                        <div className="text-xs text-gray-400">شراء: {p.purchasePrice} ر.س</div>
-                        <div className="text-sm text-[#4CAF50] font-bold">بيع: {p.sellingPrice} ر.س</div>
+                        <div className="text-xs text-gray-400">شراء: {p.purchasePrice} ج.م</div>
+                        <div className="text-sm text-[#4CAF50] font-bold">بيع: {p.sellingPrice} ج.م</div>
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2">
@@ -665,7 +665,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
 
                 {/* Prices */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-gray-600 text-sm font-semibold">سعر الشراء (تكلفتها عليك ر.س)</label>
+                  <label className="text-gray-600 text-sm font-semibold">سعر الشراء (تكلفتها عليك ج.م)</label>
                   <input 
                     type="number" 
                     value={purchasePrice}
@@ -677,7 +677,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-gray-600 text-sm font-semibold">سعر البيع للجمهور (ر.س)</label>
+                  <label className="text-gray-600 text-sm font-semibold">سعر البيع للجمهور (ج.م)</label>
                   <input 
                     type="number" 
                     value={sellingPrice}
@@ -798,7 +798,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
 
               {/* Price display tag */}
               <div className="mt-1 font-bold text-[#2D3142] text-sm">
-                السعر بالضريبة: <span className="text-lg text-[#2E86AB] font-mono">{printProduct.sellingPrice}</span> ر.س
+                السعر بالضريبة: <span className="text-lg text-[#2E86AB] font-mono">{printProduct.sellingPrice}</span> ج.م
               </div>
             </div>
 
@@ -882,7 +882,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
               <div className="grid grid-cols-2 gap-3 mt-2 text-right">
                 <div className="bg-neutral-50 p-3 rounded-xl border border-gray-100 text-center">
                   <span className="text-[10px] text-gray-400 block font-bold">سعر بيع القطعة</span>
-                  <span className="font-black text-emerald-600 text-lg">{viewBarcodeProduct.sellingPrice} ر.س</span>
+                  <span className="font-black text-emerald-600 text-lg">{viewBarcodeProduct.sellingPrice} ج.م</span>
                 </div>
                 <div className="bg-neutral-50 p-3 rounded-xl border border-gray-100 text-center">
                   <span className="text-[10px] text-gray-400 block font-bold">المخزون المتوفر</span>
@@ -925,7 +925,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
           </div>
 
           <div style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '6px', fontFamily: 'Tajawal' }}>
-            السعر: <b>{printProduct.sellingPrice} ر.س</b>
+            السعر: <b>{printProduct.sellingPrice} ج.م</b>
           </div>
         </div>
       )}

@@ -127,7 +127,7 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
           <div>
             <p className="text-gray-400 text-sm font-medium">مبيعات اليوم</p>
             <h3 className="text-3xl font-extrabold text-[#4CAF50] mt-2 font-mono">
-              {todaySales.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ر.س</span>
+              {todaySales.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ج.م</span>
             </h3>
             <span className="text-xs text-[#4CAF50] bg-emerald-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
               سداد نقدي وآجل
@@ -143,7 +143,7 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
           <div>
             <p className="text-gray-400 text-sm font-medium">إجمالي الديون المعلقة</p>
             <h3 className="text-3xl font-extrabold text-[#E63946] mt-2 font-mono">
-              {totalDebts.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ر.س</span>
+              {totalDebts.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ج.م</span>
             </h3>
             <span className="text-xs text-[#E63946] bg-rose-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
               ذمم العملاء المستحقة
@@ -265,7 +265,7 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
                         )}
                       </td>
                       <td className="py-3 text-left font-mono text-[#2D3142]">
-                        {inv.total.toLocaleString('en-US')} ر.س
+                        {inv.total.toLocaleString('en-US')} ج.م
                       </td>
                     </tr>
                   ))
@@ -322,7 +322,7 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
                   </div>
                 </div>
                 <div className="font-mono font-bold text-sm text-[#2D3142] shrink-0 mr-4">
-                  {tx.amount > 0 ? `+${tx.amount}` : tx.amount} ر.س
+                  {tx.amount > 0 ? `+${tx.amount}` : tx.amount} ج.م
                 </div>
               </div>
             ))

@@ -63,7 +63,7 @@ export default function TransactionsLog({ onToast }: TransactionsLogProps) {
       return;
     }
 
-    const headers = ["المعرف", "التاريخ والوقت", "النوع", "الوصف", "المبلغ (ر.س)", "المسؤول"];
+    const headers = ["المعرف", "التاريخ والوقت", "النوع", "الوصف", "المبلغ (ج.م)", "المسؤول"];
     
     const rows = filteredLogs.map(log => [
       log.id || '',
@@ -246,7 +246,7 @@ export default function TransactionsLog({ onToast }: TransactionsLogProps) {
                       </td>
                       <td className="p-4 text-left font-mono font-bold text-sm text-[#2D3142]">
                         {log.amount > 0 ? (
-                          <span className="text-[#4CAF50]">{log.amount.toLocaleString('en-US')} ر.س</span>
+                          <span className="text-[#4CAF50]">{log.amount.toLocaleString('en-US')} ج.م</span>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}

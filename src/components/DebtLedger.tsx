@@ -120,7 +120,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
             ...inv,
             paidAmount: newPaid,
             remainingAmount: newRemaining,
-            notes: inv.notes + ` | تم سداد جزء بقيمة ${deduction} ر.س بتاريخ اليوم`
+            notes: inv.notes + ` | تم سداد جزء بقيمة ${deduction} ج.م بتاريخ اليوم`
           });
 
           allocatedAmount -= deduction;
@@ -128,10 +128,10 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
       }
 
       // Log Transaction
-      const description = `سداد دفعة مديونية بقيمة ${payVal} ر.س من العميل ${selectedDebtor.customerName}. المتبقي له: ${remainingDebt} ر.س`;
+      const description = `سداد دفعة مديونية بقيمة ${payVal} ج.م من العميل ${selectedDebtor.customerName}. المتبقي له: ${remainingDebt} ج.م`;
       await onAddLog('debt_payment', description, payVal);
 
-      onToast(`تم تسجيل دفعة بقيمة ${payVal} ر.س لصالح ${selectedDebtor.customerName}`, "success");
+      onToast(`تم تسجيل دفعة بقيمة ${payVal} ج.م لصالح ${selectedDebtor.customerName}`, "success");
       setIsPaymentOpen(false);
       setSelectedDebtor(null);
       loadLedgerData();
@@ -167,7 +167,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
         <div className="bg-white/10 px-5 py-3 rounded-xl border border-white/15 text-center">
           <p className="text-xs text-[#A8DADC] font-bold">إجمالي المطالبات المستحقة للمحل</p>
           <p className="text-2xl font-extrabold font-mono mt-0.5 mt-1">
-            {totalOutstandingDebts.toLocaleString('en-US')} <span className="text-xs font-sans font-normal text-gray-300">ر.س</span>
+            {totalOutstandingDebts.toLocaleString('en-US')} <span className="text-xs font-sans font-normal text-gray-300">ج.م</span>
           </p>
         </div>
       </div>
@@ -245,7 +245,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
                         </span>
                       </td>
                       <td className="p-4 text-left font-mono font-bold text-base text-[#2D3142]">
-                        {d.totalDebt.toLocaleString('en-US')} ر.س
+                        {d.totalDebt.toLocaleString('en-US')} ج.م
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex justify-center items-center gap-1.5">
@@ -341,11 +341,11 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
                         </div>
                       </div>
                       <div className="text-left shrink-0">
-                        <div className="font-mono font-bold text-sm text-gray-800">إجمالي: {inv.total} ر.س</div>
+                        <div className="font-mono font-bold text-sm text-gray-800">إجمالي: {inv.total} ج.م</div>
                         <div className="flex gap-2 text-[10px] text-gray-400 mt-1">
-                          <span>المدفوع: {inv.paidAmount} ر.س</span>
+                          <span>المدفوع: {inv.paidAmount} ج.م</span>
                           <span>|</span>
-                          <span className="text-[#E63946] font-semibold">المتبقي: {inv.remainingAmount} ر.س</span>
+                          <span className="text-[#E63946] font-semibold">المتبقي: {inv.remainingAmount} ج.م</span>
                         </div>
                       </div>
                     </div>
@@ -356,7 +356,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
             
             <div className="bg-neutral-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
               <span className="text-xs text-gray-500 font-bold">
-                إجمالي الدين الفعلي له: "{selectedDebtor.totalDebt} ر.س"
+                إجمالي الدين الفعلي له: "{selectedDebtor.totalDebt} ج.م"
               </span>
               <button
                 type="button"
@@ -405,11 +405,11 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
             <form onSubmit={handleRegisterPayment} className="p-6 space-y-4">
               <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 text-xs text-[#2D3142] space-y-1.5">
                 <p><b>اسم العميل المستحق:</b> {selectedDebtor.customerName}</p>
-                <p><b>إجمالي المديونية الحالية:</b> <strong className="text-base text-[#4CAF50] font-mono">{selectedDebtor.totalDebt} ر.س</strong></p>
+                <p><b>إجمالي المديونية الحالية:</b> <strong className="text-base text-[#4CAF50] font-mono">{selectedDebtor.totalDebt} ج.م</strong></p>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-gray-600 text-sm font-semibold">المبلغ المسدد نقداً الآن (ر.س)</label>
+                <label className="text-gray-600 text-sm font-semibold">المبلغ المسدد نقداً الآن (ج.م)</label>
                 <input 
                   type="number" 
                   value={paymentAmount}

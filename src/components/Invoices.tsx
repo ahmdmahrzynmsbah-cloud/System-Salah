@@ -585,11 +585,11 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
       // D. Register a transaction log entry
       let txDescription = `بيع فاتورة رقم ${nextInvoiceNumber}`;
       if (paymentType === 'credit') {
-        txDescription += ` آجل غير مسدد بقيمة ${total} ر.س للعميل ${customerName}`;
+        txDescription += ` آجل غير مسدد بقيمة ${total} ج.م للعميل ${customerName}`;
       } else if (paymentType === 'partial') {
         txDescription += ` جزئي (دفع: ${finalPaid}، والمتبقي: ${remainingAmount}) للعميل ${customerName}`;
       } else {
-        txDescription += ` نقدي بقيمة ${total} ر.س`;
+        txDescription += ` نقدي بقيمة ${total} ج.م`;
       }
 
       await onAddLog('sale', txDescription, total);
@@ -737,7 +737,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-left">
-                          <div className="text-sm font-bold font-mono text-[#2E86AB]">{p.sellingPrice} ر.س</div>
+                          <div className="text-sm font-bold font-mono text-[#2E86AB]">{p.sellingPrice} ج.م</div>
                           <div className="text-xs text-gray-400">المخزن متاح: {p.quantity} قطع</div>
                         </div>
                         <button
@@ -779,7 +779,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                         <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
                           <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded-sm">{item.barcode}</span>
                           <span>|</span>
-                          <span>سعر الحبة: {item.sellingPrice} ر.س</span>
+                          <span>سعر الحبة: {item.sellingPrice} ج.م</span>
                         </div>
                       </div>
 
@@ -809,7 +809,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                       {/* Total and delete */}
                       <div className="text-left min-w-[90px] shrink-0">
                         <span className="font-mono font-bold text-sm text-gray-800 ml-4">
-                          {item.total} ر.س
+                          {item.total} ج.م
                         </span>
                         <button
                           onClick={() => removeFromCart(item.barcode)}
@@ -868,7 +868,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
             <div className="space-y-2.5 pt-3 border-t border-gray-50">
               <div className="flex justify-between text-sm text-gray-500">
                 <span>المجموع الأولي:</span>
-                <span className="font-mono">{calculateSubtotal()} ر.س</span>
+                <span className="font-mono">{calculateSubtotal()} ج.م</span>
               </div>
 
               {/* Discount selection */}
@@ -880,7 +880,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                   className="px-2 py-1 border border-gray-200 rounded-lg text-xs bg-white text-right cursor-pointer"
                 >
                   <option value="percentage">% نسبة مئوية</option>
-                  <option value="flat">مبلغ ثابت (ر.س)</option>
+                  <option value="flat">مبلغ ثابت (ج.م)</option>
                 </select>
                 <input
                   type="number"
@@ -894,13 +894,13 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
               {discountValue > 0 && (
                 <div className="flex justify-between text-xs text-rose-500 bg-rose-50 px-2 py-1 rounded-md">
                   <span>قيمة الخصم المستقطع:</span>
-                  <span className="font-mono">-{calculateDiscountAmount()} ر.س</span>
+                  <span className="font-mono">-{calculateDiscountAmount()} ج.م</span>
                 </div>
               )}
 
               <div className="flex justify-between text-base font-extrabold text-[#2D3142] border-t border-dashed border-gray-100 pt-3">
                 <span>الإجمالي النهائي:</span>
-                <span className="font-mono text-xl text-[#2E86AB]">{calculateGrandTotal()} ر.س</span>
+                <span className="font-mono text-xl text-[#2E86AB]">{calculateGrandTotal()} ج.م</span>
               </div>
             </div>
 
@@ -943,7 +943,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                     min={0}
                   />
                   <div className="text-xs text-gray-500 font-medium">
-                    المبلغ المتبقي المعلق: {(calculateGrandTotal() - paidAmount) > 0 ? (calculateGrandTotal() - paidAmount).toFixed(2) : 0} ر.س
+                    المبلغ المتبقي المعلق: {(calculateGrandTotal() - paidAmount) > 0 ? (calculateGrandTotal() - paidAmount).toFixed(2) : 0} ج.م
                   </div>
                 </div>
               )}
@@ -1040,10 +1040,10 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                         )}
                       </td>
                       <td className="p-4 text-left font-mono text-xs text-rose-500">
-                        {inv.discountValue > 0 ? (inv.discountType === 'percentage' ? `%${inv.discountValue}` : `${inv.discountValue} .ر.س`) : '0'}
+                        {inv.discountValue > 0 ? (inv.discountType === 'percentage' ? `%${inv.discountValue}` : `${inv.discountValue} .ج.م`) : '0'}
                       </td>
                       <td className="p-4 text-left font-mono text-[#2D3142] font-bold">
-                        {inv.total.toLocaleString('en-US')} ر.س
+                        {inv.total.toLocaleString('en-US')} ج.م
                       </td>
                       <td className="p-4 text-center text-xs text-gray-400">
                         {inv.username}
@@ -1146,8 +1146,8 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                           <span className="font-mono text-[10px] text-gray-400">{item.barcode}</span>
                         </td>
                         <td className="py-2.5 text-center font-mono">{item.quantity}</td>
-                        <td className="py-2.5 text-left font-mono">{item.sellingPrice} ر.س</td>
-                        <td className="py-2.5 text-left font-mono font-bold">{item.total} ر.س</td>
+                        <td className="py-2.5 text-left font-mono">{item.sellingPrice} ج.م</td>
+                        <td className="py-2.5 text-left font-mono font-bold">{item.total} ج.م</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1157,28 +1157,28 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                 <div className="border-t border-gray-200 pt-3 space-y-1.5 text-xs text-[#2D3142]">
                   <div className="flex justify-between">
                     <span className="text-gray-400">إجمالي السلع الأولي:</span>
-                    <span className="font-mono">{activeReceipt.subtotal} ر.س</span>
+                    <span className="font-mono">{activeReceipt.subtotal} ج.م</span>
                   </div>
                   {activeReceipt.discountAmount > 0 && (
                     <div className="flex justify-between text-rose-600">
                       <span>الخصم المطبق:</span>
-                      <span className="font-mono">-{activeReceipt.discountAmount} ر.س</span>
+                      <span className="font-mono">-{activeReceipt.discountAmount} ج.م</span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold text-sm border-t border-dashed border-gray-200 pt-2 text-[#2E86AB]">
                     <span>صافي القيمة المستحقة:</span>
-                    <span className="font-mono text-base">{activeReceipt.total} ر.س</span>
+                    <span className="font-mono text-base">{activeReceipt.total} ج.م</span>
                   </div>
 
                   {activeReceipt.paymentType !== 'cash' && (
                     <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-100 mt-2 text-[11px] space-y-1">
                       <div className="flex justify-between text-amber-900 font-semibold">
                         <span>المبلغ المدفوع:</span>
-                        <span className="font-mono">{activeReceipt.paidAmount} ر.س</span>
+                        <span className="font-mono">{activeReceipt.paidAmount} ج.م</span>
                       </div>
                       <div className="flex justify-between text-[#E63946] font-bold">
                         <span>المبلغ المعلق (المتبقي):</span>
-                        <span className="font-mono">{activeReceipt.remainingAmount} ر.س</span>
+                        <span className="font-mono">{activeReceipt.remainingAmount} ج.م</span>
                       </div>
                     </div>
                   )}
@@ -1252,10 +1252,10 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                     <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '6px 0' }}>
                         <div><strong>{item.name}</strong></div>
-                        <div style={{ fontSize: '8px', color: '#555' }}>{item.barcode} × {item.sellingPrice} ر.س</div>
+                        <div style={{ fontSize: '8px', color: '#555' }}>{item.barcode} × {item.sellingPrice} ج.م</div>
                       </td>
                       <td style={{ padding: '6px 0', textAlign: 'center' }}>{item.quantity}</td>
-                      <td style={{ padding: '6px 0', textAlign: 'left' }}>{item.total} ر.س</td>
+                      <td style={{ padding: '6px 0', textAlign: 'left' }}>{item.total} ج.م</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1266,28 +1266,28 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
               <div style={{ fontSize: '10px', spaceY: '4px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>المجموع الفرعي:</span>
-                  <span>{activeReceipt.subtotal} ر.س</span>
+                  <span>{activeReceipt.subtotal} ج.م</span>
                 </div>
                 {activeReceipt.discountAmount > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e53e3e' }}>
                     <span>الخصم المطبق:</span>
-                    <span>-{activeReceipt.discountAmount} ر.س</span>
+                    <span>-{activeReceipt.discountAmount} ج.م</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '12px', marginTop: '4px' }}>
                   <span>الإجمالي الصافي:</span>
-                  <span>{activeReceipt.total} ر.س</span>
+                  <span>{activeReceipt.total} ج.م</span>
                 </div>
 
                 {activeReceipt.paymentType !== 'cash' && (
                   <div style={{ border: '1px solid #000', padding: '4px', marginTop: '6px', fontSize: '9px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>المبلغ دُفِع:</span>
-                      <span>{activeReceipt.paidAmount} ر.س</span>
+                      <span>{activeReceipt.paidAmount} ج.م</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                       <span>المتبقي الآجل:</span>
-                      <span>{activeReceipt.remainingAmount} ر.س</span>
+                      <span>{activeReceipt.remainingAmount} ج.م</span>
                     </div>
                   </div>
                 )}
@@ -1357,8 +1357,8 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                       <td style={{ padding: '8px', border: '1px solid #ddd', fontFamily: 'monospace' }}>{item.barcode}</td>
                       <td style={{ padding: '8px', border: '1px solid #ddd' }}>{item.name}</td>
                       <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>{item.quantity}</td>
-                      <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>{item.sellingPrice} ر.س</td>
-                      <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left', fontWeight: 'bold' }}>{item.total} ر.س</td>
+                      <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>{item.sellingPrice} ج.م</td>
+                      <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left', fontWeight: 'bold' }}>{item.total} ج.م</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1369,27 +1369,27 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                   <tbody>
                     <tr>
                       <td style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>المجموع الأولي:</td>
-                      <td style={{ padding: '6px 0', textAlign: 'left', borderBottom: '1px solid #eee' }}>{activeReceipt.subtotal} ر.س</td>
+                      <td style={{ padding: '6px 0', textAlign: 'left', borderBottom: '1px solid #eee' }}>{activeReceipt.subtotal} ج.م</td>
                     </tr>
                     {activeReceipt.discountAmount > 0 && (
                       <tr>
                         <td style={{ padding: '6px 0', borderBottom: '1px solid #eee', color: '#e63946' }}>الخصم المستقطع:</td>
-                        <td style={{ padding: '6px 0', textAlign: 'left', borderBottom: '1px solid #eee', color: '#e63946' }}>-{activeReceipt.discountAmount} ر.س</td>
+                        <td style={{ padding: '6px 0', textAlign: 'left', borderBottom: '1px solid #eee', color: '#e63946' }}>-{activeReceipt.discountAmount} ج.م</td>
                       </tr>
                     )}
                     <tr>
                       <td style={{ padding: '8px 0', fontWeight: 'bold', fontSize: '14px' }}>صافي إجمالي المستحق:</td>
-                      <td style={{ padding: '8px 0', textAlign: 'left', fontWeight: 'bold', fontSize: '16px', color: '#2e86ab' }}>{activeReceipt.total} ر.س</td>
+                      <td style={{ padding: '8px 0', textAlign: 'left', fontWeight: 'bold', fontSize: '16px', color: '#2e86ab' }}>{activeReceipt.total} ج.م</td>
                     </tr>
                     {activeReceipt.paymentType !== 'cash' && (
                       <>
                         <tr style={{ color: '#555' }}>
                           <td style={{ padding: '4px 0' }}>المبلغ المدفوع:</td>
-                          <td style={{ padding: '4px 0', textAlign: 'left' }}>{activeReceipt.paidAmount} ر.س</td>
+                          <td style={{ padding: '4px 0', textAlign: 'left' }}>{activeReceipt.paidAmount} ج.م</td>
                         </tr>
                         <tr style={{ color: '#e63946', fontWeight: 'bold' }}>
                           <td style={{ padding: '4px 0' }}>المتبقي في الدفتر الآجل:</td>
-                          <td style={{ padding: '4px 0', textAlign: 'left' }}>{activeReceipt.remainingAmount} ر.س</td>
+                          <td style={{ padding: '4px 0', textAlign: 'left' }}>{activeReceipt.remainingAmount} ج.م</td>
                         </tr>
                       </>
                     )}
@@ -1502,7 +1502,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                 <div>
                   <span className="text-[10px] text-emerald-800 font-bold block">سعر البيع للقطعة</span>
                   <span className="text-2xl font-black text-emerald-700">
-                    {scannedProduct.sellingPrice} <span className="text-xs font-bold">ر.س</span>
+                    {scannedProduct.sellingPrice} <span className="text-xs font-bold">ج.م</span>
                   </span>
                 </div>
                 
@@ -1510,7 +1510,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                   <div className="text-left border-r border-emerald-200/50 pr-4">
                     <span className="text-[10px] text-gray-500 block">سعر الشراء (تكلفتها)</span>
                     <span className="text-sm font-bold text-gray-700">
-                      {scannedProduct.purchasePrice} ر.س
+                      {scannedProduct.purchasePrice} ج.م
                     </span>
                   </div>
                 )}
@@ -1549,7 +1549,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                   
                   <div className="flex justify-between text-xs text-blue-900 border-t border-blue-100/50 pt-2 font-bold">
                     <span>إجمالي حساب القطعة:</span>
-                    <span>{scannedProduct.sellingPrice * popupQuantityToAdd} ر.س</span>
+                    <span>{scannedProduct.sellingPrice * popupQuantityToAdd} ج.م</span>
                   </div>
                 </div>
               ) : (
@@ -1598,7 +1598,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                   className="flex-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
                   <ShoppingBag size={15} />
-                  <span>تأكيد الإضافة للفاتورة ({scannedProduct.sellingPrice * popupQuantityToAdd} ر.س)</span>
+                  <span>تأكيد الإضافة للفاتورة ({scannedProduct.sellingPrice * popupQuantityToAdd} ج.م)</span>
                 </button>
               )}
             </div>
@@ -1843,7 +1843,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
               <div className="bg-neutral-50 p-3 rounded-xl border border-gray-100 flex justify-between items-center text-right text-xs">
                 <div>
                   <span className="text-gray-400 block font-bold">سعر البيع المعتمد</span>
-                  <span className="text-base font-black text-emerald-600">{viewingBarcodeProduct.sellingPrice} ر.س</span>
+                  <span className="text-base font-black text-emerald-600">{viewingBarcodeProduct.sellingPrice} ج.م</span>
                 </div>
                 <div className="text-left">
                   <span className="text-gray-400 block font-bold font-sans">الكمية المتوفرة حالياً</span>
