@@ -18,6 +18,7 @@ import {
   addRecord, 
   updateRecord, 
   deleteRecord, 
+  subscribeToStore,
   Product, 
   Transaction 
 } from '../db';
@@ -200,7 +201,19 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
   }, [viewBarcodeProduct, isModalOpen]);
 
   useEffect(() => {
-    loadProducts();
+    // Real-time listener for products
+    const unsubscribe = subscribeToStore("products", (data) => {
+      setProducts(data);
+    });
+
+    // Also load settings for storeNameState
+    getAllRecords("settings").then(settings => {
+      const main = settings.find(s => s.id === "main");
+      if (main && main.storeName) {
+        setStoreNameState(main.storeName);
+      }
+    });
+
     // ESC listener to close modal
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -210,14 +223,15 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      unsubscribe();
+    };
   }, []);
 
   const loadProducts = async () => {
+    // Kept for backward compatibility if called manually
     try {
-      const data = await getAllRecords("products");
-      setProducts(data);
-      
       const settings = await getAllRecords("settings");
       const main = settings.find(s => s.id === "main");
       if (main && main.storeName) {

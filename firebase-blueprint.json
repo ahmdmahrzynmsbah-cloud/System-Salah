@@ -1,0 +1,132 @@
+{
+  "entities": {
+    "product": {
+      "title": "Product",
+      "description": "Inventory product definition",
+      "type": "object",
+      "properties": {
+        "barcode": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "brand": { "type": "string" },
+        "carCompatibility": { "type": "string" },
+        "purchasePrice": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "quantity": { "type": "number" },
+        "minStock": { "type": "number" },
+        "location": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      }
+    },
+    "invoice": {
+      "title": "Invoice",
+      "description": "Sales invoice",
+      "type": "object",
+      "properties": {
+        "invoiceNumber": { "type": "string" },
+        "date": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "subtotal": { "type": "number" },
+        "discountType": { "type": "string" },
+        "discountValue": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentType": { "type": "string" },
+        "paidAmount": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "notes": { "type": "string" },
+        "username": { "type": "string" },
+        "items": { "type": "array" }
+      }
+    },
+    "debt": {
+      "title": "Debt",
+      "description": "Debt ledger record",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "totalDebt": { "type": "number" },
+        "lastInvoiceDate": { "type": "string" }
+      }
+    },
+    "supplier": {
+      "title": "Supplier",
+      "description": "Supplier account",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "companyName": { "type": "string" },
+        "balance": { "type": "number" },
+        "notes": { "type": "string" }
+      }
+    },
+    "transaction": {
+      "title": "Transaction",
+      "description": "Financial / stock transaction",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "username": { "type": "string" }
+      }
+    },
+    "setting": {
+      "title": "Setting",
+      "description": "App setting",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string" },
+        "storeAddress": { "type": "string" },
+        "storePhone": { "type": "string" },
+        "storeLogoText": { "type": "string" },
+        "welcomeText": { "type": "string" },
+        "paperSize": { "type": "string" }
+      }
+    },
+    "user": {
+      "title": "User",
+      "description": "System user",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "product",
+      "description": "All inventory products"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "invoice",
+      "description": "All sales invoices"
+    },
+    "/debtLedger/{debtId}": {
+      "schema": "debt",
+      "description": "All debts limits"
+    },
+    "/suppliers/{supplierId}": {
+      "schema": "supplier",
+      "description": "All supplier balances"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "transaction",
+      "description": "All app transactions"
+    },
+    "/settings/{settingId}": {
+      "schema": "setting",
+      "description": "All app settings configuration"
+    },
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "All system users including admin"
+    }
+  }
+}

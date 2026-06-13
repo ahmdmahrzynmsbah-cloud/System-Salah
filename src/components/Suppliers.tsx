@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Truck, Plus, Search, Building, Phone, User, FileText, Pickaxe, X, Save, PackagePlus, Trash2, ShoppingCart } from 'lucide-react';
-import { addRecord, getAllRecords, updateRecord, deleteRecord, Supplier, User as AppUser, Product } from '../db';
+import { addRecord, getAllRecords, updateRecord, deleteRecord, subscribeToStore, Supplier, User as AppUser, Product } from '../db';
 
 interface SuppliersProps {
   onToast: (msg: string, type: 'success' | 'error' | 'warning') => void;
@@ -40,7 +40,10 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
   const [productSearch, setProductSearch] = useState('');
 
   useEffect(() => {
-    loadSuppliers();
+    const unsubscribe = subscribeToStore("suppliers", (data) => {
+      setSuppliers(data.reverse());
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleOpenPurchaseModal = async () => {

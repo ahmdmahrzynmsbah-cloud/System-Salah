@@ -24,8 +24,7 @@ import {
   seedDemoDataIfNeeded, 
   getAllRecords, 
   addRecord, 
-  AppSettings,
-  initDB
+  AppSettings
 } from './db';
 
 // Import our beautiful sub-components

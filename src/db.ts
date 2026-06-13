@@ -1,9 +1,20 @@
 /**
- * IndexedDB Driver for Auto Parts DB (AutoPartsDB)
+ * Firebase Firestore Driver for Auto Parts DB (AutoPartsDB)
  */
 
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { db } from './firebase';
+
+export function subscribeToStore(store: string, callback: (data: any[]) => void): () => void {
+  const colRef = collection(db, store);
+  return onSnapshot(colRef, (snapshot) => {
+    const data = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+    callback(data);
+  });
+}
+
 export interface Product {
-  id?: number;
+  id?: string;
   barcode: string;
   name: string;
   category: string;
@@ -26,7 +37,7 @@ export interface InvoiceItem {
 }
 
 export interface Invoice {
-  id?: number;
+  id?: string;
   invoiceNumber: string;
   date: string;
   customerName: string;
@@ -45,7 +56,7 @@ export interface Invoice {
 }
 
 export interface Debt {
-  id?: number;
+  id?: string;
   customerName: string;
   customerPhone: string;
   totalDebt: number;
@@ -53,7 +64,7 @@ export interface Debt {
 }
 
 export interface Supplier {
-  id?: number;
+  id?: string;
   name: string;
   phone: string;
   companyName: string;
@@ -62,7 +73,7 @@ export interface Supplier {
 }
 
 export interface Transaction {
-  id?: number;
+  id?: string;
   date: string;
   type: 'sale' | 'debt_payment' | 'add_stock' | 'edit_price' | 'system';
   description: string;
@@ -81,138 +92,47 @@ export interface AppSettings {
 }
 
 export interface User {
-  id?: number;
+  id?: string;
   username: string;
   password?: string; // standard password (unencrypted as per simple requirements)
   role: 'admin' | 'employee';
 }
 
-const DB_NAME = "AutoPartsDB";
-const DB_VERSION = 2;
+// Helper methods mapped to Firestore
 
-export function initDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => {
-      console.error("IndexedDB generic error:", request.error);
-      reject(request.error);
-    };
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onupgradeneeded = (event: any) => {
-      const db = event.target.result;
-
-      // Create Stores
-      if (!db.objectStoreNames.contains("products")) {
-        const productStore = db.createObjectStore("products", { keyPath: "id", autoIncrement: true });
-        productStore.createIndex("barcode", "barcode", { unique: true });
-        productStore.createIndex("name", "name", { unique: false });
-        productStore.createIndex("category", "category", { unique: false });
-      }
-
-      if (!db.objectStoreNames.contains("invoices")) {
-        const invoiceStore = db.createObjectStore("invoices", { keyPath: "id", autoIncrement: true });
-        invoiceStore.createIndex("invoiceNumber", "invoiceNumber", { unique: true });
-        invoiceStore.createIndex("customerName", "customerName", { unique: false });
-      }
-
-      if (!db.objectStoreNames.contains("debtLedger")) {
-        const debtStore = db.createObjectStore("debtLedger", { keyPath: "id", autoIncrement: true });
-        debtStore.createIndex("customerPhone", "customerPhone", { unique: true });
-        debtStore.createIndex("customerName", "customerName", { unique: false });
-      }
-
-      if (!db.objectStoreNames.contains("suppliers")) {
-        const supplierStore = db.createObjectStore("suppliers", { keyPath: "id", autoIncrement: true });
-        supplierStore.createIndex("phone", "phone", { unique: true });
-        supplierStore.createIndex("name", "name", { unique: false });
-      }
-
-      if (!db.objectStoreNames.contains("transactions")) {
-        db.createObjectStore("transactions", { keyPath: "id", autoIncrement: true });
-      }
-
-      if (!db.objectStoreNames.contains("settings")) {
-        db.createObjectStore("settings", { keyPath: "id" });
-      }
-
-      if (!db.objectStoreNames.contains("users")) {
-        const userStore = db.createObjectStore("users", { keyPath: "id", autoIncrement: true });
-        userStore.createIndex("username", "username", { unique: true });
-      }
-    };
-  });
+export async function addRecord(store: string, data: any): Promise<any> {
+  const colRef = collection(db, store);
+  const docRef = await addDoc(colRef, data);
+  return docRef.id;
 }
 
-// Helper methods as requested
-export function addRecord(store: string, data: any): Promise<any> {
-  return initDB().then((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readwrite");
-      const objStore = tx.objectStore(store);
-      const request = objStore.add(data);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  });
+export async function getAllRecords(store: string): Promise<any[]> {
+  const colRef = collection(db, store);
+  const snapshot = await getDocs(colRef);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-export function getAllRecords(store: string): Promise<any[]> {
-  return initDB().then((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readonly");
-      const objStore = tx.objectStore(store);
-      const request = objStore.getAll();
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  });
+export async function updateRecord(store: string, id: any, data: any): Promise<any> {
+  if (!id) throw new Error("Document ID missing for update");
+  const docRef = doc(db, store, String(id));
+  const payload = { ...data };
+  delete payload.id; // avoid overwriting id inline if it exists
+  await setDoc(docRef, payload, { merge: true });
+  return true;
 }
 
-export function updateRecord(store: string, id: any, data: any): Promise<any> {
-  return initDB().then((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readwrite");
-      const objStore = tx.objectStore(store);
-      // Ensure id is kept correctly in payload
-      const payload = { ...data };
-      if (id !== undefined && id !== null) {
-        payload.id = id;
-      }
-      const request = objStore.put(payload);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  });
+export async function deleteRecord(store: string, id: any): Promise<any> {
+  if (!id) throw new Error("Document ID missing for delete");
+  const docRef = doc(db, store, String(id));
+  await deleteDoc(docRef);
+  return true;
 }
 
-export function deleteRecord(store: string, id: any): Promise<any> {
-  return initDB().then((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readwrite");
-      const objStore = tx.objectStore(store);
-      const request = objStore.delete(id);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => reject(request.error);
-    });
-  });
-}
-
-export function getByIndex(store: string, indexName: string, value: any): Promise<any> {
-  return initDB().then((db) => {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(store, "readonly");
-      const objStore = tx.objectStore(store);
-      const index = objStore.index(indexName);
-      const request = index.get(value);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  });
+export async function getByIndex(store: string, indexName: string, value: any): Promise<any> {
+  // Simple fallback for indexedDB queries since we don't have indexes explicitly required dynamically here
+  // A slightly inefficient but functional shim for porting:
+  const all = await getAllRecords(store);
+  return all.find(item => item[indexName] === value);
 }
 
 /**
@@ -235,7 +155,6 @@ export async function seedDemoDataIfNeeded(): Promise<boolean> {
     // 2. Settings seeding (Essential store configuration)
     if (settings.length === 0) {
       const defaultSettings: AppSettings = {
-        id: "main",
         storeName: "مركز قطع غيار السيارات والميكانيكا",
         storeAddress: "الرياض - حي الروضة - طريق الملك عبدالله",
         storePhone: "0501234567",
@@ -243,20 +162,8 @@ export async function seedDemoDataIfNeeded(): Promise<boolean> {
         welcomeText: "نشكركم لزيارتكم وثقتكم بنا - قطع الغيار المباعة لا ترد ولا تستبدل بعد 3 أيام",
         paperSize: "80mm"
       };
-      await updateRecord("settings", "main", defaultSettings);
+      await setDoc(doc(db, "settings", "main"), defaultSettings);
       itemsAdded = true;
-    } else {
-      // Auto-Migration step: if settings exist but still contain the old default "اليمامة" or "الشبكة" or "الحديث" names, forcefully update it
-      const mainSettings = settings.find(s => s.id === "main");
-      if (mainSettings && (
-        mainSettings.storeName.includes("اليمامة") || 
-        mainSettings.storeName.includes("اليمامه") || 
-        mainSettings.storeName.includes("الحديث")
-      )) {
-        mainSettings.storeName = "مركز قطع غيار السيارات والميكانيكا";
-        await updateRecord("settings", "main", mainSettings);
-        itemsAdded = true;
-      }
     }
 
     // 3. Realistic Products seeding with genuine valid EAN-13 barcodes for testing
@@ -339,48 +246,29 @@ export async function seedDemoDataIfNeeded(): Promise<boolean> {
 }
 
 /**
- * Fully reset or partially clear tables in IndexedDB
+ * Fully reset or partially clear tables in Firestore
  */
 export async function clearOfficeDatabase(mode: 'partial' | 'full' | 'pure_empty'): Promise<void> {
-  const db = await initDB();
   const targetStores = mode === 'partial'
     ? ["invoices", "debtLedger", "transactions"]
     : ["products", "invoices", "debtLedger", "transactions", "settings", "users", "suppliers"];
   
-  // Clear all target stores within a single atomic write transaction
-  await new Promise<void>((resolve, reject) => {
-    try {
-      const tx = db.transaction(targetStores, "readwrite");
-      
-      tx.oncomplete = () => {
-        resolve();
-      };
-      tx.onerror = () => {
-        reject(tx.error || new Error("Transaction error while clearing"));
-      };
-      tx.onabort = () => {
-        reject(new Error("Transaction aborted while clearing"));
-      };
-
-      for (const storeName of targetStores) {
-        tx.objectStore(storeName).clear();
-      }
-    } catch (e) {
-      reject(e);
+  for (const storeName of targetStores) {
+    const colRef = collection(db, storeName);
+    const snapshot = await getDocs(colRef);
+    for (const docSnap of snapshot.docs) {
+      await deleteDoc(doc(db, storeName, docSnap.id));
     }
-  });
+  }
 
-  // Re-seed or insert essential fallback records after transaction completes fully
+  // Re-seed or insert essential fallback records
   if (mode === 'full') {
-    // Re-seed all demo products, demo invoices, demo customers
     await seedDemoDataIfNeeded();
   } else if (mode === 'pure_empty') {
-    // Complete reset to 100% clean blank database - but preserve default login user credentials and settings so they remain functional
     await addRecord("users", { username: "admin", password: "1234", role: "admin" });
     await addRecord("users", { username: "user", password: "1234", role: "employee" });
     
     const defaultSettings: AppSettings = {
-      id: "main",
       storeName: "مركز قطع غيار السيارات والميكانيكا",
       storeAddress: "الرياض - حي الروضة - طريق الملك عبدالله",
       storePhone: "0501234567",
@@ -388,7 +276,8 @@ export async function clearOfficeDatabase(mode: 'partial' | 'full' | 'pure_empty
       welcomeText: "نشكركم لزيارتكم وثقتكم بنا - قطع الغيار المباعة لا ترد ولا تستبدل بعد 3 أيام",
       paperSize: "80mm"
     };
-    await updateRecord("settings", "main", defaultSettings);
+    await setDoc(doc(db, "settings", "main"), defaultSettings);
   }
 }
+
 

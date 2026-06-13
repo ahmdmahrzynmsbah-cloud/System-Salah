@@ -20,7 +20,6 @@ import {
   addRecord, 
   deleteRecord, 
   updateRecord, 
-  initDB, 
   AppSettings, 
   User as UserDB,
   clearOfficeDatabase
@@ -325,7 +324,6 @@ export default function Settings({
   // BACKUP COMPILING: Generate JSON of ALL database stores
   const handleBackupDatabase = async () => {
     try {
-      const db = await initDB();
       const stores = ["products", "invoices", "debtLedger", "transactions", "settings", "users"];
       const backupData: Record<string, any[]> = {};
 
