@@ -16,6 +16,7 @@ import {
   CheckCircle,
   FileText,
   Camera,
+  Car,
   ShieldAlert,
   BadgeInfo,
   Check,
@@ -1204,12 +1205,23 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                 {/* Store Branding Header */}
                 <div className="flex justify-between items-start gap-4 border-b border-gray-200 pb-4">
                   <div>
-                    <h2 className="text-[#2D3142] font-extrabold text-xl leading-7">{shopSettings.storeName}</h2>
-                    <p className="text-gray-400 text-xs mt-1">{shopSettings.storeAddress}</p>
-                    <p className="text-gray-500 font-mono text-xs mt-1">تليفون المحل: {shopSettings.storePhone}</p>
+                    <div className="flex items-center gap-2 text-[#2D3142]">
+                      <div className="bg-[#2D3142] text-white p-1.5 rounded-lg shadow-sm">
+                        <Car size={20} />
+                      </div>
+                      <h2 className="font-black text-2xl tracking-tighter">الـعُـمـدة</h2>
+                    </div>
+                    <p className="font-bold text-sm mt-1 text-gray-700">لقطع غيار السيارات <span className="font-normal text-xs">(تويوتا ودبابة)</span></p>
+                    
+                    <div className="text-gray-600 font-mono text-xs mt-3 space-y-1">
+                      <div>عماد ابراهيم: <span className="font-bold">01000543001</span></div>
+                      <div>عماد: <span className="font-bold">01004244528</span></div>
+                      <div className="text-gray-500 font-sans mt-1">العنوان: مطروح ك3</div>
+                    </div>
                   </div>
-                  <div className="text-left font-mono text-[11px] text-gray-400">
-                    <div>رقم الحساب: <span className="font-bold">{activeReceipt.invoiceNumber}</span></div>
+                  <div className="text-left bg-white p-3 rounded-xl border border-gray-100 shadow-xs font-mono text-[11px] text-gray-500">
+                    <div className="mb-2 text-[#2E86AB] font-bold text-xs font-sans text-center border-b border-gray-100 pb-2">معاينة فاتورة المبيعات</div>
+                    <div className="mt-2">رقم الحساب: <span className="font-bold text-gray-900">{activeReceipt.invoiceNumber}</span></div>
                     <div>التاريخ: {activeReceipt.date}</div>
                     <div>المسؤول: {activeReceipt.username}</div>
                   </div>
@@ -1316,12 +1328,22 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
             // 80mm Receipt layout
             <div style={{ width: '74mm', margin: '0 auto', fontFamily: 'Tajawal, sans-serif', fontSize: '11px', color: '#000000' }}>
               <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{shopSettings.storeName}</h2>
-                <p style={{ margin: '2px 0', fontSize: '10px' }}>{shopSettings.storeAddress}</p>
-                <p style={{ margin: '2px 0', fontSize: '10px' }}>هاتف: {shopSettings.storePhone}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    <div style={{ backgroundColor: '#000', color: '#fff', padding: '4px', borderRadius: '4px' }}>
+                      <Car size={16} strokeWidth={2.5} />
+                    </div>
+                    <h2 style={{ fontSize: '20px', fontWeight: '900', margin: '0' }}>الـعُـمـدة</h2>
+                  </div>
+                  <h3 style={{ fontSize: '12px', fontWeight: 'bold', margin: '0' }}>لقطع غيار السيارات <span style={{ fontWeight: 'normal', fontSize: '10px' }}>(تويوتا ودبابة)</span></h3>
+                </div>
+                <div style={{ fontSize: '10px', marginBottom: '8px', lineHeight: '1.4' }}>
+                  <div><strong>عماد إبراهيم:</strong> 01000543001 | <strong>عماد:</strong> 01004244528</div>
+                  <div style={{ marginTop: '2px' }}>العنوان: مطروح ك3</div>
+                </div>
                 <div style={{ borderBottom: '1px dashed #000', margin: '8px 0' }}></div>
                 <h3 style={{ fontSize: '12px', fontWeight: 'bold', margin: '4px 0' }}>فاتورة مبيعات مبسطة</h3>
-                <p style={{ margin: '2px 0', fontSize: '10px', fontFamily: 'monospace' }}>رقم الفاتورة (العميل): {activeReceipt.invoiceNumber}</p>
+                <p style={{ margin: '2px 0', fontSize: '10px', fontFamily: 'monospace' }}>رقم الفاتورة: {activeReceipt.invoiceNumber}</p>
                 <p style={{ margin: '2px 0', fontSize: '10px', fontFamily: 'monospace' }}>التاريخ: {activeReceipt.date}</p>
                 <p style={{ margin: '2px 0', fontSize: '10px' }}>الكاشير: {activeReceipt.username}</p>
               </div>
@@ -1404,23 +1426,30 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
           ) : (
             // A4 Portrait invoice layout
             <div style={{ width: '100%', maxWidth: '210mm', padding: '20px', fontFamily: 'Tajawal, sans-serif' }}>
-              <table style={{ width: '100%', marginBottom: '20px' }}>
-                <tbody>
-                  <tr>
-                    <td style={{ textAlign: 'right', verticalAlign: 'top' }}>
-                      <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0' }}>{shopSettings.storeName}</h1>
-                      <p style={{ margin: '4px 0', fontSize: '12px' }}>{shopSettings.storeAddress}</p>
-                      <p style={{ margin: '4px 0', fontSize: '12px' }}>تليفون: {shopSettings.storePhone}</p>
-                    </td>
-                    <td style={{ textAlign: 'left', verticalAlign: 'top' }}>
-                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#2e86ab', margin: '0' }}>فاتورة المبيعات الرسمية</h2>
-                      <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>رقم الفاتورة (العميل):</strong> {activeReceipt.invoiceNumber}</p>
-                      <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>التاريخ:</strong> {activeReceipt.date}</p>
-                      <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>الكاشير المسؤول:</strong> {activeReceipt.username}</p>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #000', paddingBottom: '15px', marginBottom: '20px' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <div style={{ backgroundColor: '#000', color: '#fff', padding: '6px', borderRadius: '6px' }}>
+                      <Car size={24} strokeWidth={2.5} />
+                    </div>
+                    <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '0', letterSpacing: '-0.5px' }}>الـعُـمـدة</h1>
+                  </div>
+                  <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0', color: '#333' }}>لقطع غيار السيارات</h2>
+                  <p style={{ fontSize: '14px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#555' }}>تويوتا ودبابة</p>
+                  
+                  <div style={{ fontSize: '12px', lineHeight: '1.6' }}>
+                    <div><strong>عماد إبراهيم:</strong> 01000543001 | <strong>عماد:</strong> 01004244528</div>
+                    <div><strong>العنوان:</strong> مطروح ك3</div>
+                  </div>
+                </div>
+                
+                <div style={{ textAlign: 'left', border: '1px solid #ddd', padding: '15px', borderRadius: '8px', backgroundColor: '#f9fafb' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#000', margin: '0 0 10px 0', textAlign: 'center' }}>فاتورة المبيعات</h2>
+                  <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>رقم الفاتورة:</strong> <span style={{ fontFamily: 'monospace', fontSize: '14px' }}>{activeReceipt.invoiceNumber}</span></p>
+                  <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>التاريخ والوقت:</strong> {activeReceipt.date}</p>
+                  <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>الكاشير المسؤول:</strong> {activeReceipt.username}</p>
+                </div>
+              </div>
 
               <div style={{ borderTop: '2px solid #1e2a3a', borderBottom: '2px solid #1e2a3a', padding: '10px 0', marginBottom: '20px' }}>
                 <table style={{ width: '100%', fontSize: '12px' }}>
