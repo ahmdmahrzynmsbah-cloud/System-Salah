@@ -245,39 +245,4 @@ export async function seedDemoDataIfNeeded(): Promise<boolean> {
   }
 }
 
-/**
- * Fully reset or partially clear tables in Firestore
- */
-export async function clearOfficeDatabase(mode: 'partial' | 'full' | 'pure_empty'): Promise<void> {
-  const targetStores = mode === 'partial'
-    ? ["invoices", "debtLedger", "transactions"]
-    : ["products", "invoices", "debtLedger", "transactions", "settings", "users", "suppliers"];
-  
-  for (const storeName of targetStores) {
-    const colRef = collection(db, storeName);
-    const snapshot = await getDocs(colRef);
-    for (const docSnap of snapshot.docs) {
-      await deleteDoc(doc(db, storeName, docSnap.id));
-    }
-  }
-
-  // Re-seed or insert essential fallback records
-  if (mode === 'full') {
-    await seedDemoDataIfNeeded();
-  } else if (mode === 'pure_empty') {
-    await addRecord("users", { username: "admin", password: "1234", role: "admin" });
-    await addRecord("users", { username: "user", password: "1234", role: "employee" });
-    
-    const defaultSettings: AppSettings = {
-      storeName: "مركز قطع غيار السيارات والميكانيكا",
-      storeAddress: "الرياض - حي الروضة - طريق الملك عبدالله",
-      storePhone: "0501234567",
-      storeLogoText: "Modern Parts Auto",
-      welcomeText: "نشكركم لزيارتكم وثقتكم بنا - قطع الغيار المباعة لا ترد ولا تستبدل بعد 3 أيام",
-      paperSize: "80mm"
-    };
-    await setDoc(doc(db, "settings", "main"), defaultSettings);
-  }
-}
-
 

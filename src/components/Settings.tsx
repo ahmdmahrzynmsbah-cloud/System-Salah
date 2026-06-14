@@ -12,8 +12,7 @@ import {
   CheckCircle,
   Clock,
   Printer,
-  ShieldCheck,
-  RefreshCw
+  ShieldCheck
 } from 'lucide-react';
 import { 
   getAllRecords, 
@@ -21,8 +20,7 @@ import {
   deleteRecord, 
   updateRecord, 
   AppSettings, 
-  User as UserDB,
-  clearOfficeDatabase
+  User as UserDB
 } from '../db';
 
 interface SettingsProps {
@@ -61,15 +59,11 @@ export default function Settings({
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editUserRole, setEditUserRole] = useState<'admin' | 'employee'>('employee');
+  const [userToDelete, setUserToDelete] = useState<UserDB | null>(null);
 
   // Change password inputs
   const [oldPassword, setOldPassword] = useState('');
   const [newPasswordCurrent, setNewPasswordCurrent] = useState('');
-
-  // System reset inputs
-  const [resetMode, setResetMode] = useState<'partial' | 'full' | 'pure_empty'>('partial');
-  const [resetConfirmation, setResetConfirmation] = useState('');
-  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     loadSettingsData();
@@ -155,29 +149,31 @@ export default function Settings({
     }
   };
 
-  const handleDeleteUser = async (userToDelete: UserDB) => {
+  const confirmDeleteUser = async (userToDeleteParam: UserDB) => {
+    try {
+      await deleteRecord("users", userToDeleteParam.id);
+      await onAddLog('system', `حذف المستخدم: ${userToDeleteParam.username} من طاقم العمل`, 0);
+      onToast("تم حذف المستخدم بنجاح", "success");
+      loadSettingsData();
+    } catch (e) {
+      onToast("فشل حذف المستخدم", "error");
+    } finally {
+      setUserToDelete(null);
+    }
+  };
+
+  const handleDeleteUser = (userToDeleteParam: UserDB) => {
     if (currentUser?.role !== 'admin') {
       onToast("هذا الإجراء متاح لمدير النظام الفعلي فقط", "error");
       return;
     }
 
-    if (userToDelete.username === currentUser.username) {
+    if (userToDeleteParam.username === currentUser.username) {
       onToast("لا يمكن حذف حسابك الفعلي الّذي تسجل به الدخول حالياً!", "error");
       return;
     }
 
-    if (!window.confirm(`هل أنت متأكد من رغبتك في مسح حساب الموظف: ${userToDelete.username}؟`)) {
-      return;
-    }
-
-    try {
-      await deleteRecord("users", userToDelete.id);
-      await onAddLog('system', `حذف المستخدم: ${userToDelete.username} من طاقم العمل`, 0);
-      onToast("تم حذف المستخدم بنجاح", "success");
-      loadSettingsData();
-    } catch (e) {
-      onToast("فشل حذف المستخدم", "error");
-    }
+    setUserToDelete(userToDeleteParam);
   };
 
   const handleStartEditUser = (user: UserDB) => {
@@ -264,64 +260,6 @@ export default function Settings({
     }
   };
 
-  const handleSystemReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (currentUser?.role !== 'admin') {
-      onToast("تنبيه: تصفير النظام متاح لمدير النظام فقط (Admin)", "error");
-      return;
-    }
-
-    if (resetConfirmation.trim() !== "123456") {
-      onToast("كلمة مرور التصفير غير صحيحة! يرجى إدخال الرمز السري الصحيح (123456)", "warning");
-      return;
-    }
-
-    let warningText = "";
-    if (resetMode === 'partial') {
-      warningText = "سوف تقوم بمسح جميع الفواتير والمبيعات اليومية والديون آجل بالكامل. هل ترغب بالاستمرار ومسح الحسابات؟";
-    } else if (resetMode === 'full') {
-      warningText = "سيتم حذف كامل البيانات والمنتجات الحالية وتنزيل المواد والبيانات التجريبية الافتراضية مع تصفير كامل العدادات. هل ترغب بالاستمرار؟";
-    } else {
-      warningText = "تحذير قصوى: سيتم مسح كافة البضاعة والمنتجات والفواتير والمبيعات والحسابات والتمتع بصفحة بيضاء فارغة تماماً. هل أنت متأكد من تصفير السيستم الشامل؟";
-    }
-
-    if (!window.confirm(warningText)) {
-      return;
-    }
-
-    setIsResetting(true);
-    try {
-      await clearOfficeDatabase(resetMode);
-      
-      try {
-        await onAddLog('system', `إجراء تصفير للسيستم بنجاح (نوع التصفير: ${resetMode})`, 0);
-      } catch (_) {
-        // Safe check in case logs table was purged and transaction fails
-      }
-
-      onToast("تم تصفير وإعادة تهيئة النظام بنجاح تام!", "success");
-      setResetConfirmation('');
-      onSettingsUpdated(); // notify parent component to load settings
-      
-      // If full or pure empty reset, logout/clear local storage session to force fresh login matching restored credentials
-      if (resetMode !== 'partial') {
-        localStorage.removeItem("autoPartsUser");
-      }
-
-      // Reload page to re-initialize everything cleanly
-      setTimeout(() => {
-        window.location.reload();
-      }, 1200);
-
-    } catch (err) {
-      console.error(err);
-      onToast("خطأ أثناء تصفير قاعدة البيانات", "error");
-    } finally {
-      setIsResetting(false);
-    }
-  };
-
-  // BACKUP COMPILING: Generate JSON of ALL database stores
   const handleBackupDatabase = async () => {
     try {
       const stores = ["products", "invoices", "debtLedger", "transactions", "settings", "users"];
@@ -499,61 +437,6 @@ export default function Settings({
               <Download size={14} />
               استخراج النسخة الاحتياطية الكاملة (JSON)
             </button>
-          </div>
-
-          {/* SYSTEM RESET / ZEROING PANEL */}
-          <div className="bg-rose-50/45 p-5 rounded-2xl shadow-xs border border-rose-100 space-y-4">
-            <h3 className="font-bold text-rose-900 text-base border-b border-rose-150 pb-2 flex items-center gap-2">
-              <RefreshCw size={18} className="text-rose-600" />
-              تصفير وإعادة تهيئة النظام (System Reset)
-            </h3>
-            <p className="text-xs text-rose-700 leading-normal">
-              تحذير حاسم: هذا الإجراء يتيح لك تصفير المبيعات اليومية أو مسح مستودع البضاعة وقاعدة البيانات بالكامل للبدء من جديد. يرجى الحذر فالعملية لا رجاحة فيها!
-            </p>
-
-            {currentUser?.role !== 'admin' ? (
-              <div className="p-3 bg-rose-100 text-rose-950 rounded-xl text-xs font-bold border border-rose-200">
-                ⚠️ تصفير النظام وصلاحيات الفورمات مقصورة فقط على "المدير العام" (Admin).
-              </div>
-            ) : (
-              <form onSubmit={handleSystemReset} className="space-y-3.5">
-                <div className="flex flex-col gap-1">
-                  <label className="text-rose-950 text-xs font-bold">اختر نوع التصفير المطلوب وإعادتة:</label>
-                  <select
-                    value={resetMode}
-                    onChange={(e: any) => setResetMode(e.target.value)}
-                    className="px-3 py-2 border border-rose-200 bg-white rounded-xl text-xs cursor-pointer focus:border-rose-500 outline-hidden font-bold text-rose-900"
-                  >
-                    <option value="partial">تصفير المبيعات والديون والعمليات فقط (حفظ قائمة البضائع)</option>
-                    <option value="full">تصفير شامل بالكامل (إعادة تنزيل البضاعة والبيانات التجريبية الافتراضية)</option>
-                    <option value="pure_empty">تصفير كاسح تام (مستودع فارغ 100% وبدون أي مواد مسبقة)</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-rose-950 text-xs font-semibold">
-                    لتأكيد التصفير، يرجى كتابة الرمز السري <span className="underline font-bold text-rose-600">123456</span> أدناه:
-                  </label>
-                  <input
-                    type="password"
-                    value={resetConfirmation}
-                    onChange={(e) => setResetConfirmation(e.target.value)}
-                    placeholder="أدخل الرمز السري 123456"
-                    className="px-3 py-2 border border-rose-200 focus:border-rose-500 outline-hidden rounded-xl text-xs bg-white text-center font-extrabold text-rose-900 tracking-wider"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isResetting}
-                  className="px-5 py-3 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-bold rounded-xl text-xs cursor-pointer transition-all shadow-md flex items-center justify-center gap-1.5 w-full"
-                >
-                  <RefreshCw size={14} className={isResetting ? "animate-spin" : ""} />
-                  {isResetting ? 'جاري معالجة وتصفير قاعدة البيانات...' : 'تنفيذ تصفير السيستم فوراً'}
-                </button>
-              </form>
-            )}
           </div>
 
         </div>
@@ -741,6 +624,34 @@ export default function Settings({
         )}
       </div>
 
+      {/* MODAL: Delete User Confirmation */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-gray-100 flex flex-col">
+            <div className="p-4 bg-rose-50 border-b border-rose-100 flex items-center gap-2">
+              <Trash2 className="text-rose-500" size={20} />
+              <h3 className="font-bold text-rose-700">تأكيد حذف الموظف</h3>
+            </div>
+            <div className="p-5 text-sm text-gray-600 font-medium leading-relaxed">
+              هل أنت متأكد من رغبتك في مسح حساب الموظف: <span className="font-bold text-gray-900">{userToDelete.username}</span>؟
+            </div>
+            <div className="p-4 bg-neutral-50 flex gap-2 justify-end">
+              <button
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 border border-gray-200 text-gray-500 font-bold rounded-lg text-sm hover:bg-white transition-colors cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={() => confirmDeleteUser(userToDelete)}
+                className="px-4 py-2 bg-rose-500 text-white font-bold rounded-lg text-sm hover:bg-rose-600 shadow-md shadow-rose-500/20 transition-all cursor-pointer"
+              >
+                تأكيد الحذف
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

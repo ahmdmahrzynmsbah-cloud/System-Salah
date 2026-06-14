@@ -116,18 +116,25 @@ export default function App() {
 
   const initializeApp = async () => {
     try {
-      // One-time automatic clean up of existing dummy data on system update
-      if (!localStorage.getItem("mock_data_fully_cleaned_v4")) {
-        const { clearOfficeDatabase } = await import('./db');
-        await clearOfficeDatabase('pure_empty');
-        localStorage.setItem("mock_data_fully_cleaned_v4", "true");
-        // Clear login session to ensure fresh state matching clean credentials
-        localStorage.removeItem("autoPartsUser");
-        setCurrentUser(null);
-      }
-
       // 1. Seed base data if database brand new
       await seedDemoDataIfNeeded();
+
+      if (!localStorage.getItem("migrated_sa_invoices_v2")) {
+        try {
+          const invoices = await getAllRecords("invoices");
+          const { updateRecord } = await import('./db');
+          
+          let counter = 1;
+          for (const inv of invoices) {
+            await updateRecord("invoices", inv.id, { invoiceNumber: `SA-${counter}` });
+            counter++;
+          }
+          localStorage.setItem("migrated_sa_invoices_v2", "true");
+        } catch (error) {
+          console.error("Migration error:", error);
+        }
+      }
+
       setIsDbReady(true);
 
       // 2. Load shop settings

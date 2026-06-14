@@ -51,6 +51,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [viewBarcodeProduct, setViewBarcodeProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   // Form Fields
   const [barcode, setBarcode] = useState('');
@@ -291,23 +292,26 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
     setIsModalOpen(true);
   };
 
-  const deleteProductItem = async (product: Product) => {
+  const confirmDeleteProduct = async (product: Product) => {
+    try {
+      if (product.id) {
+        await deleteRecord("products", product.id);
+        await onAddLog('system', `حذف القطعة: ${product.name} ذات الباركود ${product.barcode}`, 0);
+        onToast("تم حذف المنتج بنجاح", "success");
+      }
+    } catch (e) {
+      onToast("فشل الحذف، يرجى المحاولة لاحقاً", "error");
+    } finally {
+      setProductToDelete(null);
+    }
+  };
+
+  const deleteProductItem = (product: Product) => {
     if (currentUser?.role !== 'admin') {
       onToast("عذراً، صلاحية الحذف متاحة للمشرفين فقط", "error");
       return;
     }
-    if (!window.confirm(`هل أنت متأكد من حذف المنتج: ${product.name}؟`)) {
-      return;
-    }
-
-    try {
-      await deleteRecord("products", product.id);
-      await onAddLog('system', `حذف القطعة: ${product.name} ذات الباركود ${product.barcode}`, 0);
-      onToast("تم حذف المنتج بنجاح", "success");
-      loadProducts();
-    } catch (e) {
-      onToast("فشل الحذف، يرجى المحاولة لاحقاً", "error");
-    }
+    setProductToDelete(product);
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -940,6 +944,34 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
 
           <div style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '6px', fontFamily: 'Tajawal' }}>
             السعر: <b>{printProduct.sellingPrice} ج.م</b>
+          </div>
+        </div>
+      )}
+      {/* MODAL: Delete Product Confirmation */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-gray-100 flex flex-col">
+            <div className="p-4 bg-rose-50 border-b border-rose-100 flex items-center gap-2">
+              <Trash2 className="text-rose-500" size={20} />
+              <h3 className="font-bold text-rose-700">تأكيد حذف المنتج</h3>
+            </div>
+            <div className="p-5 text-sm text-gray-600 font-medium leading-relaxed">
+              هل أنت متأكد من حذف المنتج: <span className="font-bold text-gray-900">{productToDelete.name}</span>؟
+            </div>
+            <div className="p-4 bg-neutral-50 flex gap-2 justify-end">
+              <button
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2 border border-gray-200 text-gray-500 font-bold rounded-lg text-sm hover:bg-white transition-colors cursor-pointer"
+              >
+                إلغاء التراجع
+              </button>
+              <button
+                onClick={() => confirmDeleteProduct(productToDelete)}
+                className="px-4 py-2 bg-rose-500 text-white font-bold rounded-lg text-sm hover:bg-rose-600 shadow-md shadow-rose-500/20 transition-all cursor-pointer"
+              >
+                تأكيد الحذف
+              </button>
+            </div>
           </div>
         </div>
       )}

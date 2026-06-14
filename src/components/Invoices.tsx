@@ -19,12 +19,15 @@ import {
   ShieldAlert,
   BadgeInfo,
   Check,
-  ShoppingBag
+  ShoppingBag,
+  Trash2,
+  Edit
 } from 'lucide-react';
 import { 
   getAllRecords, 
   addRecord, 
   updateRecord, 
+  deleteRecord,
   getByIndex,
   Product, 
   Invoice, 
@@ -90,7 +93,11 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
   const [quickAddLocation, setQuickAddLocation] = useState('المستودع الرئيسي');
 
   // Auto generated Invoice Number state
-  const [nextInvoiceNumber, setNextInvoiceNumber] = useState('INV-0001');
+  const [nextInvoiceNumber, setNextInvoiceNumber] = useState('SA-1');
+
+  // Confirmation modals state
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+  const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | null>(null);
 
   useEffect(() => {
     loadInitialData();
@@ -186,10 +193,9 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
       setProducts(allSpecs);
       setInvoices(allBills);
 
-      // Generate invoice number
+      // Generate simple sequential invoice number
       const numCode = allBills.length + 1;
-      const paddedStr = String(numCode).padStart(4, '0');
-      setNextInvoiceNumber(`INV-${paddedStr}`);
+      setNextInvoiceNumber(`SA-${numCode}`);
     } catch (e) {
       console.error(e);
     }
@@ -373,7 +379,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
       e.currentTarget.value = '';
       setSearchResults([]);
 
-      // 0. Check if the scanned barcode is actually an Invoice Number (e.g. INV-0001)
+      // 0. Check if the scanned barcode is actually an Invoice Number (e.g. SA-1)
       const matchedInvoice = invoices.find(inv => inv.invoiceNumber.toLowerCase() === query.toLowerCase());
       if (matchedInvoice) {
         setViewingBarcodeProduct(null);
@@ -618,6 +624,81 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
 
   const handleInspectReceipt = (inv: Invoice) => {
     setActiveReceipt(inv);
+  };
+
+  const confirmDeleteInvoice = async (inv: Invoice) => {
+    try {
+      // 1. Return items to inventory
+      for (const item of inv.items) {
+        const prod = products.find(p => p.barcode === item.barcode);
+        if (prod && prod.id) {
+          await updateRecord("products", prod.id, {
+            ...prod,
+            quantity: prod.quantity + item.quantity
+          });
+        }
+      }
+
+      // 2. Reverse debt if applicable
+      if (inv.remainingAmount > 0) {
+        const allDebts = await getAllRecords("debtLedger");
+        const existingDebt = allDebts.find((d: any) => d.customerName.toLowerCase() === inv.customerName.trim().toLowerCase());
+        if (existingDebt && existingDebt.id) {
+          const updatedDebt = Math.max(0, existingDebt.totalDebt - inv.remainingAmount);
+          if (updatedDebt === 0) {
+            await deleteRecord("debtLedger", existingDebt.id);
+          } else {
+            await updateRecord("debtLedger", existingDebt.id, {
+              ...existingDebt,
+              totalDebt: updatedDebt
+            });
+          }
+        }
+      }
+
+      // 3. Delete the invoice itself
+      if (inv.id) {
+        await deleteRecord("invoices", inv.id);
+      }
+      
+      await onAddLog('sale', `حذف فاتورة رقم ${inv.invoiceNumber} بقيمة ${inv.total} ج.م`, 0);
+      onToast("تم حذف الفاتورة وإرجاع الكميات بنجاح", "success");
+      loadInitialData(); // Refresh list and inventory
+      setInvoiceToDelete(null);
+      return true;
+    } catch (e: any) {
+      console.error(e);
+      onToast(`حدث خطأ أثناء حذف الفاتورة: ${e.message}`, "error");
+      return false;
+    }
+  };
+
+  const handleDeleteInvoice = (inv: Invoice) => {
+    setInvoiceToDelete(inv);
+  };
+
+  const confirmEditInvoice = async (inv: Invoice) => {
+    // Temporarily delete it so we can remake it, skip confirm
+    const success = await confirmDeleteInvoice(inv);
+    
+    if (!success) return;
+
+    // Set cart and customer info
+    setCartItems(inv.items);
+    setCustomerName(inv.customerName);
+    setCustomerPhone(inv.customerPhone || '');
+    setDiscountType(inv.discountType);
+    setDiscountValue((inv.discountValue || 0).toString());
+    setPaymentType(inv.paymentType || 'cash');
+    setPaidAmount((inv.paidAmount || 0).toString());
+    setNextInvoiceNumber(inv.invoiceNumber); // Keep the exact same invoice number
+    
+    setInvoiceToEdit(null);
+    setViewMode('create');
+  };
+
+  const handleEditInvoice = (inv: Invoice) => {
+    setInvoiceToEdit(inv);
   };
 
   // Filtered invoices listing
@@ -1002,14 +1083,14 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
             <table className="w-full text-right text-sm">
               <thead className="bg-neutral-50 text-gray-500 font-semibold border-b border-gray-100">
                 <tr>
-                  <th className="p-4">رقم الفاتورة</th>
+                  <th className="p-4">رقم الفاتورة (العميل)</th>
                   <th className="p-4">اسم العميل</th>
                   <th className="p-4">التاريخ والوقت</th>
                   <th className="p-4 text-center">طريقة الدفع</th>
                   <th className="p-4 text-left">خصم</th>
                   <th className="p-4 text-left">الخصم الإجمالي</th>
                   <th className="p-4 text-center">خدمة الكاشير</th>
-                  <th className="p-4 text-center">معاينة</th>
+                  <th className="p-4 text-center">الإجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium">
@@ -1049,12 +1130,31 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                         {inv.username}
                       </td>
                       <td className="p-4 text-center">
-                        <button
-                          onClick={() => handleInspectReceipt(inv)}
-                          className="p-1.5 hover:bg-neutral-100 text-[#2E86AB] rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Eye size={16} />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleInspectReceipt(inv)}
+                            title="معاينة وطباعة"
+                            className="p-1.5 hover:bg-[#2E86AB]/10 text-[#2E86AB] rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleEditInvoice(inv)}
+                            title="تعديل الفاتورة"
+                            className="p-1.5 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          {currentUser?.role === 'admin' && (
+                            <button
+                              onClick={() => handleDeleteInvoice(inv)}
+                              title="حذف الفاتورة"
+                              className="p-1.5 hover:bg-rose-100 text-rose-500 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -1222,7 +1322,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                 <p style={{ margin: '2px 0', fontSize: '10px' }}>هاتف: {shopSettings.storePhone}</p>
                 <div style={{ borderBottom: '1px dashed #000', margin: '8px 0' }}></div>
                 <h3 style={{ fontSize: '12px', fontWeight: 'bold', margin: '4px 0' }}>فاتورة مبيعات مبسطة</h3>
-                <p style={{ margin: '2px 0', fontSize: '10px', fontFamily: 'monospace' }}>رقم الفاتورة: {activeReceipt.invoiceNumber}</p>
+                <p style={{ margin: '2px 0', fontSize: '10px', fontFamily: 'monospace' }}>رقم الفاتورة (العميل): {activeReceipt.invoiceNumber}</p>
                 <p style={{ margin: '2px 0', fontSize: '10px', fontFamily: 'monospace' }}>التاريخ: {activeReceipt.date}</p>
                 <p style={{ margin: '2px 0', fontSize: '10px' }}>الكاشير: {activeReceipt.username}</p>
               </div>
@@ -1315,7 +1415,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                     </td>
                     <td style={{ textAlign: 'left', verticalAlign: 'top' }}>
                       <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#2e86ab', margin: '0' }}>فاتورة المبيعات الرسمية</h2>
-                      <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>رقم الفاتورة:</strong> {activeReceipt.invoiceNumber}</p>
+                      <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>رقم الفاتورة (العميل):</strong> {activeReceipt.invoiceNumber}</p>
                       <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>التاريخ:</strong> {activeReceipt.date}</p>
                       <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>الكاشير المسؤول:</strong> {activeReceipt.username}</p>
                     </td>
@@ -1863,6 +1963,67 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                 className="w-full py-3 bg-white hover:bg-neutral-105 border border-gray-200 text-gray-750 font-extrabold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 إغلاق نافذة المعاينة والمسح
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL: Delete Invoice Confirmation */}
+      {invoiceToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-gray-100 flex flex-col">
+            <div className="p-4 bg-rose-50 border-b border-rose-100 flex items-center gap-2">
+              <Trash2 className="text-rose-500" size={20} />
+              <h3 className="font-bold text-rose-700">تأكيد حذف الفاتورة</h3>
+            </div>
+            <div className="p-5 text-sm text-gray-600 font-medium leading-relaxed">
+              هل أنت متأكد من حذف الفاتورة رقم <span className="font-bold text-gray-900">{invoiceToDelete.invoiceNumber}</span> بشكل نهائي؟
+              <br /><br />
+              - سيتم إرجاع كميات المخزون للرفوف.
+              <br />
+              - سيتم تصحيح وتعديل المديونية إن وجدت.
+            </div>
+            <div className="p-4 bg-neutral-50 flex gap-2 justify-end">
+              <button
+                onClick={() => setInvoiceToDelete(null)}
+                className="px-4 py-2 border border-gray-200 text-gray-500 font-bold rounded-lg text-sm hover:bg-white transition-colors cursor-pointer"
+              >
+                إلغاء التراجع
+              </button>
+              <button
+                onClick={() => confirmDeleteInvoice(invoiceToDelete)}
+                className="px-4 py-2 bg-rose-500 text-white font-bold rounded-lg text-sm hover:bg-rose-600 shadow-md shadow-rose-500/20 transition-all cursor-pointer"
+              >
+                تأكيد الحذف
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Edit Invoice Confirmation */}
+      {invoiceToEdit && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-gray-100 flex flex-col">
+            <div className="p-4 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+              <Edit className="text-amber-600" size={20} />
+              <h3 className="font-bold text-amber-700">تأكيد التعديل والإرجاع</h3>
+            </div>
+            <div className="p-5 text-sm text-gray-600 font-medium leading-relaxed">
+              تعديل الفاتورة سيقوم بإلغائها وإرجاع منتجاتها لشاشة البيع مرة أخرى لتتمكن من التعديل عليها وحفظها، هل توافق؟
+            </div>
+            <div className="p-4 bg-neutral-50 flex gap-2 justify-end">
+              <button
+                onClick={() => setInvoiceToEdit(null)}
+                className="px-4 py-2 border border-gray-200 text-gray-500 font-bold rounded-lg text-sm hover:bg-white transition-colors cursor-pointer"
+              >
+                إلغاء التراجع
+              </button>
+              <button
+                onClick={() => confirmEditInvoice(invoiceToEdit)}
+                className="px-4 py-2 bg-amber-500 text-white font-bold rounded-lg text-sm hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+              >
+                موافق، قم بالتعديل
               </button>
             </div>
           </div>
