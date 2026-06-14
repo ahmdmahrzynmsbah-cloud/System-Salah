@@ -163,8 +163,9 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
     // Sort debts by totalAmount descending for professional grouping
     const sortedDebts = [...debts].sort((a, b) => b.totalDebt - a.totalDebt);
 
-    sortedDebts.forEach(d => {
+    sortedDebts.forEach((d, idx) => {
       rows.push({
+        '#': idx + 1,
         'اسم العميل': d.customerName,
         'رقم الهاتف': d.customerPhone || 'غير متوفر',
         'تاريخ آخر تعامل': d.lastInvoiceDate || 'غير متوفر',
@@ -172,7 +173,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
       });
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(rows, { header: ['اسم العميل', 'رقم الهاتف', 'تاريخ آخر تعامل', 'إجمالي المديونية (ج.م)'] });
+    const worksheet = XLSX.utils.json_to_sheet(rows, { header: ['#', 'اسم العميل', 'رقم الهاتف', 'تاريخ آخر تعامل', 'إجمالي المديونية (ج.م)'] });
     
     // Set RTL direction for the worksheet
     if(!worksheet['!views']) worksheet['!views'] = [];
@@ -180,6 +181,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
 
     // Auto-size columns loosely
     const colWidths = [
+      { wch: 10 },
       { wch: 30 },
       { wch: 20 },
       { wch: 20 },
@@ -251,6 +253,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
           <table className="w-full text-right text-sm">
             <thead className="bg-[#F0F4F8] text-[#2D3142] font-bold">
               <tr className="border-b border-gray-100">
+                <th className="p-4 w-12 text-center">#</th>
                 <th className="p-4">اسم العميل بالكامل</th>
                 <th className="p-4">رقم الجوال</th>
                 <th className="p-4">آخر مطالبة مالية</th>
@@ -267,7 +270,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
                   </td>
                 </tr>
               ) : (
-                filteredDebts.map((d) => {
+                filteredDebts.map((d, idx) => {
                   // Color statuses: Green (settled/0), Orange (partial, but has debt), Red (high debt/no pay)
                   // Let's check status
                   let statusText = 'غير مسدد';
@@ -290,6 +293,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
 
                   return (
                     <tr key={d.id} className="hover:bg-neutral-50/50 transition-colors">
+                      <td className="p-4 text-center text-gray-400 font-mono text-sm">{idx + 1}</td>
                       <td className="p-4 font-bold text-gray-800">{d.customerName}</td>
                       <td className="p-4 font-mono text-gray-500">{d.customerPhone || 'غير متوفر'}</td>
                       <td className="p-4 text-xs font-mono text-gray-400">{d.lastInvoiceDate || 'غير متوفر'}</td>

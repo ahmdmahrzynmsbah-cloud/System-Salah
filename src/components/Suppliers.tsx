@@ -13,6 +13,7 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -25,16 +26,16 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
   // Purchase Modal State
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
-  const [purchaseSupplierId, setPurchaseSupplierId] = useState<number | ''>('');
+  const [purchaseSupplierId, setPurchaseSupplierId] = useState<string | ''>('');
   const [purchaseItems, setPurchaseItems] = useState<{
-    productId: number;
+    productId: string;
     productName: string;
     barcode: string;
     quantity: number;
     purchasePrice: number;
   }[]>([]);
   
-  const [selProductId, setSelProductId] = useState<number | ''>('');
+  const [selProductId, setSelProductId] = useState<string | ''>('');
   const [selQty, setSelQty] = useState<number>(1);
   const [selPrice, setSelPrice] = useState<number>(0);
   const [productSearch, setProductSearch] = useState('');
@@ -210,6 +211,24 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
     }
   };
 
+  const handleDeleteClick = (supplier: Supplier, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSupplierToDelete(supplier);
+  };
+
+  const confirmDeleteSupplier = async () => {
+    if (!supplierToDelete || !supplierToDelete.id) return;
+    try {
+      await deleteRecord("suppliers", supplierToDelete.id);
+      await onAddLog('system', `حذف مورد: ${supplierToDelete.name}`, 0);
+      onToast("تم حذف المورد بنجاح", "success");
+      setSupplierToDelete(null);
+    } catch (err) {
+      console.error(err);
+      onToast("حدث خطأ أثناء الحذف", "error");
+    }
+  };
+
   const filteredSuppliers = suppliers.filter(s => 
     s.name.includes(searchQuery) ||
     s.phone.includes(searchQuery) ||
@@ -281,24 +300,14 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
                   <th className="py-4 px-6 font-semibold">الجوال</th>
                   <th className="py-4 px-6 font-semibold">الرصيد المتبقي له</th>
                   <th className="py-4 px-6 font-semibold">ملاحظات</th>
+                  <th className="py-4 px-6 font-semibold text-center w-24">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredSuppliers.map((supplier, idx) => (
                   <tr 
                     key={supplier.id} 
-                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
-                    onClick={() => {
-                      setEditingSupplier(supplier);
-                      setFormData({
-                        name: supplier.name,
-                        phone: supplier.phone,
-                        companyName: supplier.companyName,
-                        balance: supplier.balance,
-                        notes: supplier.notes
-                      });
-                      setIsAddModalOpen(true);
-                    }}
+                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                   >
                     <td className="py-4 px-6 text-gray-400 font-mono text-sm">{idx + 1}</td>
                     <td className="py-4 px-6 font-bold text-[#2E86AB]">{supplier.name}</td>
@@ -310,6 +319,35 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
                       </span>
                     </td>
                     <td className="py-4 px-6 text-gray-500 text-sm truncate max-w-[200px]">{supplier.notes || '-'}</td>
+                    <td className="py-4 px-6 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSupplier(supplier);
+                            setFormData({
+                              name: supplier.name,
+                              phone: supplier.phone,
+                              companyName: supplier.companyName,
+                              balance: supplier.balance,
+                              notes: supplier.notes
+                            });
+                            setIsAddModalOpen(true);
+                          }}
+                          className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors tooltip mt-0"
+                          title="تعديل المورد"
+                        >
+                          <Pickaxe size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteClick(supplier, e)}
+                          className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors tooltip mt-0"
+                          title="حذف المورد"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -458,7 +496,7 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
                 <label className="text-sm font-bold text-gray-700 block mb-2">اختر المورد</label>
                 <select 
                   value={purchaseSupplierId} 
-                  onChange={e => setPurchaseSupplierId(Number(e.target.value))}
+                  onChange={e => setPurchaseSupplierId(e.target.value)}
                   className="w-full bg-white border border-gray-300 rounded-xl py-2.5 px-4 text-sm focus:ring-2 focus:ring-emerald-500/30 outline-none"
                 >
                   <option value="">-- يرجى اختيار المورد --</option>
@@ -490,7 +528,7 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
                     <select 
                       value={selProductId} 
                       onChange={e => {
-                        const val = Number(e.target.value);
+                        const val = e.target.value;
                         setSelProductId(val);
                         const prod = dbProducts.find(p => p.id === val);
                         if (prod) setSelPrice(prod.purchasePrice);
@@ -597,6 +635,39 @@ export default function Suppliers({ onToast, currentUser, onAddLog }: SuppliersP
                 <Save size={20} />
                 اعتماد وترحيل للمستودع
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {supplierToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+          <div className="bg-white max-w-sm w-full rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mb-4 mx-auto">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-center text-gray-800 mb-2">تأكيد الحذف</h3>
+              <p className="text-gray-500 text-sm text-center mb-6">
+                هل أنت متأكد من حذف المورد <span className="font-bold text-gray-800">{supplierToDelete.name}</span>؟ لا يمكن التراجع عن هذا الإجراء.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSupplierToDelete(null)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteSupplier}
+                  className="flex-1 px-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition-colors shadow-md shadow-rose-500/20"
+                >
+                  نعم، احذف
+                </button>
+              </div>
             </div>
           </div>
         </div>
