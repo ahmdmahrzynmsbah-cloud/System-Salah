@@ -305,8 +305,8 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
               </button>
             </div>
 
-            <div className="p-6 space-y-4 max-h-[450px] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4 text-xs bg-neutral-50 p-4 border border-gray-100 rounded-xl">
+            <div className="p-4 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-neutral-50 p-4 border border-gray-100 rounded-xl">
                 <div>
                   <span className="text-gray-400 block mb-1">اسم العميل:</span>
                   <strong className="text-gray-800 text-sm">{selectedDebtor.customerName}</strong>

@@ -35,6 +35,7 @@ import {
   Debt, 
   AppSettings 
 } from '../db';
+import * as LucideIcons from 'lucide-react';
 import { CameraScanner } from './CameraScanner';
 import { Barcode } from './Barcode';
 
@@ -46,6 +47,7 @@ interface InvoicesProps {
 }
 
 export default function Invoices({ onAddLog, currentUser, onToast, shopSettings }: InvoicesProps) {
+  const StoreIcon = (LucideIcons as any)[shopSettings.storeLogoText || 'Car'] || LucideIcons.Car;
   const [products, setProducts] = useState<Product[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [viewMode, setViewMode] = useState<'create' | 'list'>('create');
@@ -86,10 +88,10 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
   const [quickAddCategory, setQuickAddCategory] = useState('قطع ميكانيكية');
   const [quickAddBrand, setQuickAddBrand] = useState('أصلي');
   const [quickAddCarCompatibility, setQuickAddCarCompatibility] = useState('عام');
-  const [quickAddPurchasePrice, setQuickAddPurchasePrice] = useState<string>('0');
-  const [quickAddSellingPrice, setQuickAddSellingPrice] = useState<string>('0');
-  const [quickAddQuantity, setQuickAddQuantity] = useState<string>('5');
-  const [quickAddMinStock, setQuickAddMinStock] = useState<string>('1');
+  const [quickAddPurchasePrice, setQuickAddPurchasePrice] = useState<string>('');
+  const [quickAddSellingPrice, setQuickAddSellingPrice] = useState<string>('');
+  const [quickAddQuantity, setQuickAddQuantity] = useState<string>('');
+  const [quickAddMinStock, setQuickAddMinStock] = useState<string>('');
   const [quickAddLocation, setQuickAddLocation] = useState('المستودع الرئيسي');
 
   // Auto generated Invoice Number state
@@ -255,10 +257,10 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
       setQuickAddCategory('قطع ميكانيكية');
       setQuickAddBrand('أصلي');
       setQuickAddCarCompatibility('عام');
-      setQuickAddPurchasePrice('0');
-      setQuickAddSellingPrice('0');
-      setQuickAddQuantity('5');
-      setQuickAddMinStock('1');
+      setQuickAddPurchasePrice('');
+      setQuickAddSellingPrice('');
+      setQuickAddQuantity('');
+      setQuickAddMinStock('');
       setQuickAddLocation('المستودع الرئيسي');
       
       onToast(`الباركود الممسوح غير مسجل بالمنظومة: ${decodedBarcode}`, "warning");
@@ -440,10 +442,10 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
         setQuickAddCategory('قطع ميكانيكية');
         setQuickAddBrand('أصلي');
         setQuickAddCarCompatibility('عام');
-        setQuickAddPurchasePrice('0');
-        setQuickAddSellingPrice('0');
-        setQuickAddQuantity('5');
-        setQuickAddMinStock('1');
+        setQuickAddPurchasePrice('');
+        setQuickAddSellingPrice('');
+        setQuickAddQuantity('');
+        setQuickAddMinStock('');
         setQuickAddLocation('المستودع الرئيسي');
         onToast(`الباركود الممسوح غير مسجل بالمنظومة: ${query}`, "warning");
       }
@@ -1199,24 +1201,29 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
             </div>
 
             {/* Simulated Receipt Preview for user inspection */}
-            <div className="p-8 space-y-6 overflow-y-auto max-h-[500px]" style={{ direction: 'rtl' }}>
-              <div className="border border-neutral-100 p-6 rounded-xl bg-neutral-50 space-y-6">
+            <div className="p-4 sm:p-8 space-y-6 overflow-y-auto max-h-[75vh]" style={{ direction: 'rtl' }}>
+              <div className="border border-neutral-100 p-4 sm:p-6 rounded-xl bg-neutral-50 space-y-6">
                 
                 {/* Store Branding Header */}
-                <div className="flex justify-between items-start gap-4 border-b border-gray-200 pb-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-gray-200 pb-4">
                   <div>
                     <div className="flex items-center gap-2 text-[#2D3142]">
                       <div className="bg-[#2D3142] text-white p-1.5 rounded-lg shadow-sm">
-                        <Car size={20} />
+                        <StoreIcon size={20} />
                       </div>
-                      <h2 className="font-black text-2xl tracking-tighter">الـعُـمـدة</h2>
+                      <h2 className="font-black text-2xl tracking-tighter">{shopSettings.storeName}</h2>
                     </div>
-                    <p className="font-bold text-sm mt-1 text-gray-700">لقطع غيار السيارات <span className="font-normal text-xs">(تويوتا ودبابة)</span></p>
+                    {shopSettings.invoiceSubtitle && (
+                      <p className="font-bold text-sm mt-1 text-gray-700">
+                        {shopSettings.invoiceSubtitle} 
+                        {shopSettings.invoiceSubtitle2 && <span className="font-normal text-xs"> ({shopSettings.invoiceSubtitle2})</span>}
+                      </p>
+                    )}
                     
                     <div className="text-gray-600 font-mono text-xs mt-3 space-y-1">
-                      <div>عماد ابراهيم: <span className="font-bold">01000543001</span></div>
-                      <div>عماد: <span className="font-bold">01004244528</span></div>
-                      <div className="text-gray-500 font-sans mt-1">العنوان: مطروح ك3</div>
+                      {shopSettings.invoicePhone1 && <div>{shopSettings.invoicePhone1}</div>}
+                      {shopSettings.invoicePhone2 && <div>{shopSettings.invoicePhone2}</div>}
+                      {shopSettings.storeAddress && <div className="text-gray-500 font-sans mt-1">العنوان: {shopSettings.storeAddress}</div>}
                     </div>
                   </div>
                   <div className="text-left bg-white p-3 rounded-xl border border-gray-100 shadow-xs font-mono text-[11px] text-gray-500">
@@ -1331,15 +1338,19 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                     <div style={{ backgroundColor: '#000', color: '#fff', padding: '4px', borderRadius: '4px' }}>
-                      <Car size={16} strokeWidth={2.5} />
+                      <StoreIcon size={16} strokeWidth={2.5} />
                     </div>
-                    <h2 style={{ fontSize: '20px', fontWeight: '900', margin: '0' }}>الـعُـمـدة</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: '900', margin: '0' }}>{shopSettings.storeName}</h2>
                   </div>
-                  <h3 style={{ fontSize: '12px', fontWeight: 'bold', margin: '0' }}>لقطع غيار السيارات <span style={{ fontWeight: 'normal', fontSize: '10px' }}>(تويوتا ودبابة)</span></h3>
+                  {shopSettings.invoiceSubtitle && (
+                    <h3 style={{ fontSize: '12px', fontWeight: 'bold', margin: '0' }}>{shopSettings.invoiceSubtitle} {shopSettings.invoiceSubtitle2 && <span style={{ fontWeight: 'normal', fontSize: '10px' }}>({shopSettings.invoiceSubtitle2})</span>}</h3>
+                  )}
                 </div>
                 <div style={{ fontSize: '10px', marginBottom: '8px', lineHeight: '1.4' }}>
-                  <div><strong>عماد إبراهيم:</strong> 01000543001 | <strong>عماد:</strong> 01004244528</div>
-                  <div style={{ marginTop: '2px' }}>العنوان: مطروح ك3</div>
+                  {(shopSettings.invoicePhone1 || shopSettings.invoicePhone2) && (
+                    <div>{shopSettings.invoicePhone1} {shopSettings.invoicePhone1 && shopSettings.invoicePhone2 ? ' | ' : ''} {shopSettings.invoicePhone2}</div>
+                  )}
+                  {shopSettings.storeAddress && <div style={{ marginTop: '2px' }}>العنوان: {shopSettings.storeAddress}</div>}
                 </div>
                 <div style={{ borderBottom: '1px dashed #000', margin: '8px 0' }}></div>
                 <h3 style={{ fontSize: '12px', fontWeight: 'bold', margin: '4px 0' }}>فاتورة مبيعات مبسطة</h3>
@@ -1430,16 +1441,22 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                     <div style={{ backgroundColor: '#000', color: '#fff', padding: '6px', borderRadius: '6px' }}>
-                      <Car size={24} strokeWidth={2.5} />
+                      <StoreIcon size={24} strokeWidth={2.5} />
                     </div>
-                    <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '0', letterSpacing: '-0.5px' }}>الـعُـمـدة</h1>
+                    <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '0', letterSpacing: '-0.5px' }}>{shopSettings.storeName}</h1>
                   </div>
-                  <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0', color: '#333' }}>لقطع غيار السيارات</h2>
-                  <p style={{ fontSize: '14px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#555' }}>تويوتا ودبابة</p>
+                  {shopSettings.invoiceSubtitle && (
+                    <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0', color: '#333' }}>{shopSettings.invoiceSubtitle}</h2>
+                  )}
+                  {shopSettings.invoiceSubtitle2 && (
+                    <p style={{ fontSize: '14px', margin: '0 0 8px 0', fontWeight: 'bold', color: '#555' }}>{shopSettings.invoiceSubtitle2}</p>
+                  )}
                   
                   <div style={{ fontSize: '12px', lineHeight: '1.6' }}>
-                    <div><strong>عماد إبراهيم:</strong> 01000543001 | <strong>عماد:</strong> 01004244528</div>
-                    <div><strong>العنوان:</strong> مطروح ك3</div>
+                    {(shopSettings.invoicePhone1 || shopSettings.invoicePhone2) && (
+                      <div><strong>التواصل:</strong> {shopSettings.invoicePhone1} {shopSettings.invoicePhone1 && shopSettings.invoicePhone2 ? ' | ' : ''} {shopSettings.invoicePhone2}</div>
+                    )}
+                    {shopSettings.storeAddress && <div><strong>العنوان:</strong> {shopSettings.storeAddress}</div>}
                   </div>
                 </div>
                 
@@ -1600,7 +1617,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
               </div>
 
               {/* Grid specifications */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-neutral-50 p-3 rounded-xl border border-gray-100">
                   <span className="text-[10px] text-gray-500 block">العلامة التجارية / الماركة</span>
                   <span className="font-bold text-gray-800 text-sm">{scannedProduct.brand || 'غير محدد'}</span>
@@ -1783,7 +1800,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-gray-750 text-xs font-extrabold mb-1">الماركة / العلامة التجارية</label>
                     <input
@@ -1806,7 +1823,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-gray-750 text-xs font-extrabold mb-1">تصنيف القطعة رئيسياً</label>
                     <select
@@ -1955,7 +1972,7 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
               </div>
 
               {/* Barcode SVG Projector */}
-              <div className="bg-white border border-neutral-100 p-8 rounded-2xl shadow-inner flex flex-col items-center justify-center">
+              <div className="bg-white border border-neutral-100 p-5 sm:p-8 rounded-2xl shadow-inner flex flex-col items-center justify-center">
                 <div className="bg-white p-3 rounded-xl border border-dashed border-neutral-200 scale-110">
                   <Barcode value={viewingBarcodeProduct.barcode} height={65} width={2.2} displayValue={false} />
                 </div>

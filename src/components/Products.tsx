@@ -20,28 +20,26 @@ import {
   deleteRecord, 
   subscribeToStore,
   Product, 
-  Transaction 
+  Transaction,
+  AppSettings
 } from '../db';
+import { db } from '../firebase';
+import { setDoc, doc } from 'firebase/firestore';
 import { Barcode } from './Barcode';
 
 interface ProductsProps {
   onAddLog: (type: 'sale' | 'debt_payment' | 'add_stock' | 'edit_price' | 'system', description: string, amount: number) => Promise<void>;
   currentUser: { username: string; role: 'admin' | 'employee' } | null;
   onToast: (msg: string, type: 'success' | 'error' | 'warning') => void;
+  shopSettings?: AppSettings;
+  onSettingsUpdated?: () => Promise<void>;
 }
 
-const CATEGORIES = [
-  "فلاتر",
-  "فرامل",
-  "كهرباء",
-  "زيوت",
-  "إطارات",
-  "عادم",
-  "تعليق",
-  "أخرى"
-];
-
-export default function Products({ onAddLog, currentUser, onToast }: ProductsProps) {
+export default function Products({ onAddLog, currentUser, onToast, shopSettings, onSettingsUpdated }: ProductsProps) {
+  const categoriesList = shopSettings?.categories || [
+    "فلاتر", "فرامل", "كهرباء", "زيوت", "إطارات", "عادم", "تعليق", "أخرى"
+  ];
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('الكل');
@@ -56,14 +54,21 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
   // Form Fields
   const [barcode, setBarcode] = useState('');
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('فلاتر');
+  const [category, setCategory] = useState(categoriesList[0] || '');
   const [brand, setBrand] = useState('');
   const [carCompatibility, setCarCompatibility] = useState('');
-  const [purchasePrice, setPurchasePrice] = useState(0);
-  const [sellingPrice, setSellingPrice] = useState(0);
-  const [quantity, setQuantity] = useState(0);
-  const [minStock, setMinStock] = useState(5);
+  const [purchasePrice, setPurchasePrice] = useState<number | ''>('');
+  const [sellingPrice, setSellingPrice] = useState<number | ''>('');
+  const [quantity, setQuantity] = useState<number | ''>('');
+  const [minStock, setMinStock] = useState<number | ''>('');
   const [location, setLocation] = useState('');
+
+  // Category Manage Modal
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategoryIdx, setEditingCategoryIdx] = useState<number | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [categoryToDeleteIdx, setCategoryToDeleteIdx] = useState<number | null>(null);
   const [imageUrl, setImageUrl] = useState('');
 
   // Barcode Print Preview state
@@ -262,9 +267,9 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
     setCategory('فلاتر');
     setBrand('');
     setCarCompatibility('');
-    setPurchasePrice(0);
-    setSellingPrice(0);
-    setQuantity(10);
+    setPurchasePrice('');
+    setSellingPrice('');
+    setQuantity('');
     setMinStock(5);
     setLocation('');
     setImageUrl('');
@@ -394,20 +399,128 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
   };
 
   // Filter & Search Logic
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = 
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const handleSaveCategory = async () => {
+    if (!newCategoryName.trim()) {
+      onToast("الرجاء إدخال اسم الفئة", "warning");
+      return;
+    }
+    if (categoriesList.includes(newCategoryName.trim())) {
+      onToast("الفئة موجودة مسبقاً", "warning");
+      return;
+    }
+
+    try {
+      const updatedCategories = [...categoriesList, newCategoryName.trim()];
+      const settingsRef = doc(db, 'settings', shopSettings?.id || 'main');
+      await setDoc(settingsRef, { categories: updatedCategories }, { merge: true });
+      if (onSettingsUpdated) await onSettingsUpdated();
+      setNewCategoryName('');
+      onToast("تمت الإضافة بنجاح", "success");
+    } catch (error) {
+      console.error(error);
+      onToast("حدث خطأ أثناء الإضافة", "error");
+    }
+  };
+
+  const handleUpdateCategory = async (idx: number) => {
+    if (!editCategoryName.trim()) {
+      onToast("الرجاء إدخال اسم الفئة", "warning");
+      return;
+    }
+    try {
+      const updatedCategories = [...categoriesList];
+      const oldName = updatedCategories[idx];
+      updatedCategories[idx] = editCategoryName.trim();
+      const settingsRef = doc(db, 'settings', shopSettings?.id || 'main');
+      await setDoc(settingsRef, { categories: updatedCategories }, { merge: true });
+      
+      products.forEach(async (p) => {
+        if (p.category === oldName && p.id) {
+          await updateRecord('products', p.id, { category: editCategoryName.trim() });
+        }
+      });
+
+      if (onSettingsUpdated) await onSettingsUpdated();
+      setEditingCategoryIdx(null);
+      setEditCategoryName('');
+      onToast("تم التحديث بنجاح", "success");
+    } catch (error) {
+      console.error(error);
+      onToast("حدث خطأ أثناء التحديث", "error");
+    }
+  };
+
+  const handleDeleteCategoryClick = (idx: number) => {
+    setCategoryToDeleteIdx(idx);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (categoryToDeleteIdx === null) return;
+    const idx = categoryToDeleteIdx;
+    try {
+      const updatedCategories = categoriesList.filter((_, i) => i !== idx);
+      const settingsRef = doc(db, 'settings', shopSettings?.id || 'main');
+      await setDoc(settingsRef, { categories: updatedCategories }, { merge: true });
+      if (onSettingsUpdated) await onSettingsUpdated();
+      onToast("تم الحذف بنجاح", "success");
+    } catch (error) {
+      console.error(error);
+      onToast("حدث خطأ أثناء الحذف", "error");
+    } finally {
+      setCategoryToDeleteIdx(null);
+    }
+  };
+
+  const matchesSearch = (p: Product) => {
+    const searchMatches = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       p.barcode.includes(searchQuery) ||
       p.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.carCompatibility.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesCategory = selectedCategory === 'الكل' || p.category === selectedCategory;
 
-    return matchesSearch && matchesCategory;
-  });
+    return searchMatches && matchesCategory;
+  };
+
+  const filteredProducts = products.filter(matchesSearch);
 
   return (
     <div className="space-y-6">
+      {/* Category Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar border-b border-gray-100 mb-4 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <button
+          onClick={() => setSelectedCategory('الكل')}
+          className={`flex-shrink-0 px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm ${
+            selectedCategory === 'الكل' 
+              ? 'bg-[#1E2A3A] text-white' 
+              : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+          }`}
+        >
+          الكل
+        </button>
+        {categoriesList.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`flex-shrink-0 px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-sm ${
+              selectedCategory === cat 
+                ? 'bg-[#1E2A3A] text-white' 
+                : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+        {currentUser?.role === 'admin' && (
+          <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 flex items-center gap-1"
+          >
+            <Layers size={16} /> إدارة الفئات
+          </button>
+        )}
+      </div>
+
       {/* Search, Filter Action Header */}
       <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
         <div className="flex flex-1 flex-col sm:flex-row gap-3">
@@ -432,20 +545,6 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
               </span>
               <span>قارئ الباركود مستعد 🔌</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-400 text-xs shrink-0 font-medium">تصنيف الفئة:</span>
-            <select
-              id="category-filter-select"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-200 bg-white rounded-xl text-sm focus:border-[#2E86AB] outline-hidden cursor-pointer"
-            >
-              <option value="الكل">الكل</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
           </div>
         </div>
         <div>
@@ -651,7 +750,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
                     onChange={(e) => setCategory(e.target.value)}
                     className="px-3 py-2 border border-gray-200 outline-hidden rounded-xl text-sm bg-white cursor-pointer"
                   >
-                    {CATEGORIES.map(c => (
+                    {categoriesList.map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
@@ -687,7 +786,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
                   <input 
                     type="number" 
                     value={purchasePrice}
-                    onChange={(e) => setPurchasePrice(Number(e.target.value))}
+                    onChange={(e) => setPurchasePrice(e.target.value === '' ? '' : Number(e.target.value))}
                     className="px-4 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-mono text-[#2D3142]"
                     min={0}
                     required
@@ -699,7 +798,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
                   <input 
                     type="number" 
                     value={sellingPrice}
-                    onChange={(e) => setSellingPrice(Number(e.target.value))}
+                    onChange={(e) => setSellingPrice(e.target.value === '' ? '' : Number(e.target.value))}
                     className="px-4 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-mono text-[#4CAF50] font-bold"
                     min={0}
                     required
@@ -712,7 +811,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
                   <input 
                     type="number" 
                     value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    onChange={(e) => setQuantity(e.target.value === '' ? '' : Number(e.target.value))}
                     className="px-4 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-mono text-[#2D3142]"
                     min={0}
                     required
@@ -724,7 +823,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
                   <input 
                     type="number" 
                     value={minStock}
-                    onChange={(e) => setMinStock(Number(e.target.value))}
+                    onChange={(e) => setMinStock(e.target.value === '' ? '' : Number(e.target.value))}
                     className="px-4 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-mono text-[#FF9800]"
                     min={1}
                     required
@@ -882,7 +981,7 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
               </div>
 
               {/* Ultra High Contrast Barcode Container for flawless scan */}
-              <div className="border border-neutral-100 bg-white p-8 rounded-2xl shadow-inner flex flex-col items-center justify-center">
+              <div className="border border-neutral-100 bg-white p-5 sm:p-8 rounded-2xl shadow-inner flex flex-col items-center justify-center">
                 <div className="bg-white p-2.5 rounded-xl border border-dashed border-neutral-200 scale-110">
                   <Barcode value={viewBarcodeProduct.barcode} height={68} width={2.2} displayValue={false} />
                 </div>
@@ -971,6 +1070,105 @@ export default function Products({ onAddLog, currentUser, onToast }: ProductsPro
               >
                 تأكيد الحذف
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Category Management Modal */}
+      {isCategoryModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 no-print"
+          style={{ direction: 'rtl' }}
+        >
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-100 flex flex-col transform transition-all animate-in fade-in zoom-in duration-150">
+            <div className="bg-[#1E2A3A] p-5 text-white flex items-center justify-between">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <Layers size={20} className="text-[#2E86AB]" /> إدارة فئات المنتجات
+              </h3>
+              <button 
+                onClick={() => {
+                  setIsCategoryModalOpen(false);
+                  setEditingCategoryIdx(null);
+                  setEditCategoryName('');
+                  setNewCategoryName('');
+                }}
+                className="text-gray-400 hover:text-white transition-colors cursor-pointer bg-white/5 hover:bg-white/10 p-2 rounded-xl"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="اسم الفئة الجديدة..."
+                  className="flex-1 px-4 py-2 border border-gray-200 outline-hidden rounded-xl text-sm"
+                />
+                <button 
+                  onClick={handleSaveCategory}
+                  className="bg-[#2E86AB] hover:bg-[#1E2A3A] text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors cursor-pointer shadow-xs"
+                >
+                  إضافة
+                </button>
+              </div>
+
+              <div className="border border-gray-100 rounded-xl max-h-[300px] overflow-y-auto divide-y divide-gray-50">
+                {categoriesList.map((cat, idx) => (
+                  <div key={idx} className="p-3 flex items-center justify-between hover:bg-neutral-50 transition-colors">
+                    {editingCategoryIdx === idx ? (
+                      <div className="flex gap-2 flex-1 items-center">
+                        <input
+                          type="text"
+                          value={editCategoryName}
+                          onChange={(e) => setEditCategoryName(e.target.value)}
+                          className="flex-1 px-3 py-1.5 border border-[#2E86AB] outline-hidden rounded-lg text-sm bg-blue-50/30"
+                          autoFocus
+                        />
+                        <button onClick={() => handleUpdateCategory(idx)} className="text-emerald-600 bg-emerald-50 hover:bg-emerald-100 p-1.5 rounded-lg transition-colors cursor-pointer">
+                          حفظ
+                        </button>
+                        <button onClick={() => setEditingCategoryIdx(null)} className="text-gray-500 bg-gray-100 hover:bg-gray-200 p-1.5 rounded-lg transition-colors cursor-pointer">
+                          إلغاء
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-bold text-[#2D3142] text-sm flex-1">{cat}</span>
+                        <div className="flex items-center gap-2">
+                          {categoryToDeleteIdx === idx ? (
+                            <div className="flex items-center gap-2 bg-rose-50 p-1 rounded-lg">
+                              <span className="text-xs text-rose-600 font-bold px-2">تأكيد الحذف؟</span>
+                              <button onClick={confirmDeleteCategory} className="bg-rose-500 hover:bg-rose-600 text-white px-2 py-1 rounded text-xs font-bold transition-colors">نعم</button>
+                              <button onClick={() => setCategoryToDeleteIdx(null)} className="bg-white text-gray-500 border border-gray-200 px-2 py-1 rounded text-xs font-bold hover:bg-gray-50 transition-colors">لا</button>
+                            </div>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => {
+                                  setEditingCategoryIdx(idx);
+                                  setEditCategoryName(cat);
+                                }}
+                                className="text-[#2E86AB] bg-blue-50 hover:bg-blue-100 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteCategoryClick(idx)}
+                                className="text-rose-500 bg-rose-50 hover:bg-rose-100 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

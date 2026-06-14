@@ -48,6 +48,12 @@ export default function Settings({
   const [storeLogoText, setStoreLogoText] = useState(shopSettings.storeLogoText);
   const [welcomeText, setWelcomeText] = useState(shopSettings.welcomeText);
   const [paperSize, setPaperSize] = useState<'A4' | '80mm'>(shopSettings.paperSize);
+  
+  const [invoiceSubtitle, setInvoiceSubtitle] = useState(shopSettings.invoiceSubtitle || '');
+  const [invoiceSubtitle2, setInvoiceSubtitle2] = useState(shopSettings.invoiceSubtitle2 || '');
+  const [invoicePhone1, setInvoicePhone1] = useState(shopSettings.invoicePhone1 || '');
+  const [invoicePhone2, setInvoicePhone2] = useState(shopSettings.invoicePhone2 || '');
+  const [systemName, setSystemName] = useState(shopSettings.systemName || 'نظام المبيعات والمخزون');
 
   // User list additions
   const [newUsername, setNewUsername] = useState('');
@@ -101,7 +107,12 @@ export default function Settings({
         storePhone: storePhone.trim(),
         storeLogoText: storeLogoText.trim(),
         welcomeText: welcomeText.trim(),
-        paperSize: paperSize
+        paperSize: paperSize,
+        invoiceSubtitle: invoiceSubtitle.trim(),
+        invoiceSubtitle2: invoiceSubtitle2.trim(),
+        invoicePhone1: invoicePhone1.trim(),
+        invoicePhone2: invoicePhone2.trim(),
+        systemName: systemName.trim()
       };
 
       await updateRecord("settings", "main", updated);
@@ -322,6 +333,58 @@ export default function Settings({
                   type="text"
                   value={storeLogoText}
                   onChange={(e) => setStoreLogoText(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-semibold"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-500 text-xs font-bold leading-5">النص تحت الشعار (مثال: لقطع غيار السيارات)</label>
+                <input
+                  type="text"
+                  value={invoiceSubtitle}
+                  onChange={(e) => setInvoiceSubtitle(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-semibold"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-500 text-xs font-bold leading-5">النص الفرعي (مثال: تويوتا ودبابة)</label>
+                <input
+                  type="text"
+                  value={invoiceSubtitle2}
+                  onChange={(e) => setInvoiceSubtitle2(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-semibold"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-500 text-xs font-bold leading-5">رقم التواصل الأول في الفاتورة</label>
+                <input
+                  type="text"
+                  value={invoicePhone1}
+                  onChange={(e) => setInvoicePhone1(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-semibold"
+                  placeholder="مثال: عماد إبراهيم: 01000543001"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-500 text-xs font-bold leading-5">رقم التواصل الثاني في الفاتورة</label>
+                <input
+                  type="text"
+                  value={invoicePhone2}
+                  onChange={(e) => setInvoicePhone2(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-semibold"
+                  placeholder="مثال: عماد: 01004244528"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-500 text-xs font-bold leading-5">اسم النظام</label>
+                <input
+                  type="text"
+                  value={systemName}
+                  onChange={(e) => setSystemName(e.target.value)}
                   className="px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-semibold"
                 />
               </div>

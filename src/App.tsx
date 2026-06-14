@@ -54,12 +54,27 @@ interface AppNotification {
 
 const DEFAULT_SETTINGS: AppSettings = {
   id: "main",
-  storeName: "مركز قطع غيار السيارات والميكانيكا",
-  storeAddress: "الرياض - حي الروضة - طريق الملك عبدالله",
-  storePhone: "0501234567",
-  storeLogoText: "Modern Parts Auto",
-  welcomeText: "نشكركم لزيارتكم وثقتكم بنا - قطع الغيار المباعة لا ترد ولا تستبدل بعد 3 أيام",
-  paperSize: "80mm"
+  storeName: "الـعُـمـدة",
+  storeAddress: "مطروح ك3",
+  storePhone: "01004244528",
+  storeLogoText: "Car",
+  welcomeText: "نشكركم لزيارتكم وثقتكم بنا - البضاعة المباعة لا ترد ولا تستبدل بعد 3 أيام",
+  paperSize: "80mm",
+  invoiceSubtitle: "لقطع غيار السيارات",
+  invoiceSubtitle2: "تويوتا ودبابة",
+  invoicePhone1: "عماد إبراهيم: 01000543001",
+  invoicePhone2: "عماد: 01004244528",
+  systemName: "نظام المبيعات والمخزون",
+  categories: [
+    "فلاتر",
+    "فرامل",
+    "كهرباء",
+    "زيوت",
+    "إطارات",
+    "عادم",
+    "تعليق",
+    "أخرى"
+  ]
 };
 
 export default function App() {
@@ -144,7 +159,11 @@ export default function App() {
       const savedUser = sessionStorage.getItem("autoPartsUser");
       if (savedUser) {
         try {
-          setCurrentUser(JSON.parse(savedUser));
+          const parsedUser = JSON.parse(savedUser);
+          setCurrentUser(parsedUser);
+          if (parsedUser.role === 'employee' && activeTab === 'dashboard') {
+            setActiveTab('invoices');
+          }
         } catch (_) {
           sessionStorage.removeItem("autoPartsUser");
         }
@@ -158,9 +177,13 @@ export default function App() {
   const loadSettings = async () => {
     try {
       const settingsRecords = await getAllRecords("settings");
-      const mainSettings = settingsRecords.find(s => s.id === "main");
+      let mainSettings = settingsRecords.find(s => s.id === "main");
       if (mainSettings) {
-        setShopSettings(mainSettings);
+        // If they had the exact old default name, override it to the new requested name
+        if (mainSettings.storeName === "مركز قطع غيار السيارات والميكانيكا") {
+           mainSettings = { ...mainSettings, ...DEFAULT_SETTINGS };
+        }
+        setShopSettings({ ...DEFAULT_SETTINGS, ...mainSettings });
       } else {
         setShopSettings(DEFAULT_SETTINGS);
       }
@@ -225,6 +248,9 @@ export default function App() {
   const handleLoginSuccess = (user: { username: string; role: 'admin' | 'employee' }) => {
     setCurrentUser(user);
     sessionStorage.setItem("autoPartsUser", JSON.stringify(user));
+    if (user.role === 'employee') {
+      setActiveTab('invoices');
+    }
   };
 
   // Handle logout
@@ -312,7 +338,7 @@ export default function App() {
   }
 
   // Navigation tabs config
-  const navItems = [
+  const allNavItems = [
     { id: 'dashboard', label: 'لوحة التحكم', icon: BarChart3 },
     { id: 'invoices', label: 'المبيعات و الفواتير', icon: Receipt },
     { id: 'products', label: 'مستودع المنتجات', icon: Package, badgeKey: 'products' },
@@ -321,6 +347,12 @@ export default function App() {
     { id: 'transactions', label: 'سجل العمليات العام', icon: History },
     { id: 'settings', label: 'إعدادات النظام والطباعة', icon: SettingsIcon },
   ];
+
+  const currentRole = currentUser?.role || 'employee';
+  const navItems = allNavItems.filter(item => {
+    if (currentRole === 'admin') return true;
+    return ['invoices', 'products', 'debts'].includes(item.id);
+  });
 
   return (
     <div className="min-h-screen bg-[#F0F4F8] text-[#2D3142] flex" style={{ direction: 'rtl', fontFamily: 'var(--font-sans)' }}>
@@ -342,7 +374,7 @@ export default function App() {
               <h2 className="font-extrabold text-xs tracking-wide leading-tight line-clamp-2 max-w-[150px] text-gray-100" title={shopSettings.storeName}>
                 {shopSettings.storeName}
               </h2>
-              <span className="text-[9px] text-gray-400 font-medium">نظام المبيعات والمخزون</span>
+              <span className="text-[9px] text-gray-400 font-medium">{shopSettings.systemName || 'نظام المبيعات والمخزون'}</span>
             </div>
           </div>
           {/* Mobile close button */}
@@ -529,7 +561,7 @@ export default function App() {
 
         {/* Dynamic component routing area */}
         <main className="flex-grow p-4 sm:p-5 md:p-6 overflow-y-auto xl:max-w-7xl xl:mx-auto w-full">
-          {activeTab === 'dashboard' && (
+          {activeTab === 'dashboard' && currentRole === 'admin' && (
             <Dashboard 
               onNavigate={(tab) => setActiveTab(tab)} 
               currentUser={currentUser} 
@@ -541,6 +573,8 @@ export default function App() {
               onAddLog={handleAddLog} 
               currentUser={currentUser} 
               onToast={showToast} 
+              shopSettings={shopSettings}
+              onSettingsUpdated={loadSettings}
             />
           )}
 
@@ -553,7 +587,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'suppliers' && (
+          {activeTab === 'suppliers' && currentRole === 'admin' && (
             <Suppliers onToast={showToast} currentUser={currentUser} onAddLog={handleAddLog} />
           )}
 
@@ -565,13 +599,13 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'transactions' && (
+          {activeTab === 'transactions' && currentRole === 'admin' && (
             <TransactionsLog 
               onToast={showToast} 
             />
           )}
 
-          {activeTab === 'settings' && (
+          {activeTab === 'settings' && currentRole === 'admin' && (
             <Settings 
               onAddLog={handleAddLog} 
               currentUser={currentUser} 

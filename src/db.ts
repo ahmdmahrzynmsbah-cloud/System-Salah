@@ -89,6 +89,12 @@ export interface AppSettings {
   storeLogoText: string;
   welcomeText: string;
   paperSize: 'A4' | '80mm';
+  invoiceSubtitle?: string;
+  invoiceSubtitle2?: string;
+  invoicePhone1?: string;
+  invoicePhone2?: string;
+  systemName?: string;
+  categories?: string[];
 }
 
 export interface User {
@@ -155,21 +161,28 @@ export async function seedDemoDataIfNeeded(): Promise<boolean> {
     // 2. Settings seeding (Essential store configuration)
     if (settings.length === 0) {
       const defaultSettings: AppSettings = {
-        storeName: "مركز قطع غيار السيارات والميكانيكا",
-        storeAddress: "الرياض - حي الروضة - طريق الملك عبدالله",
-        storePhone: "0501234567",
-        storeLogoText: "Modern Parts Auto",
-        welcomeText: "نشكركم لزيارتكم وثقتكم بنا - قطع الغيار المباعة لا ترد ولا تستبدل بعد 3 أيام",
-        paperSize: "80mm"
+        storeName: "الـعُـمـدة",
+        storeAddress: "مطروح ك3",
+        storePhone: "01004244528",
+        storeLogoText: "Car",
+        welcomeText: "نشكركم لزيارتكم وثقتكم بنا - البضاعة المباعة لا ترد ولا تستبدل بعد 3 أيام",
+        paperSize: "80mm",
+        invoiceSubtitle: "لقطع غيار السيارات",
+        invoiceSubtitle2: "تويوتا ودبابة",
+        invoicePhone1: "عماد إبراهيم: 01000543001",
+        invoicePhone2: "عماد: 01004244528",
+        systemName: "نظام المبيعات والمخزون"
       };
       await setDoc(doc(db, "settings", "main"), defaultSettings);
       itemsAdded = true;
     }
 
     // 3. Realistic Products seeding with genuine valid EAN-13 barcodes for testing
-    const products = await getAllRecords("products");
-    if (products.length === 0) {
-      const realProducts: Product[] = [
+    // Only seed if settings are brand new, to prevent re-seeding when user deletes all products.
+    if (settings.length === 0) {
+      const products = await getAllRecords("products");
+      if (products.length === 0) {
+        const realProducts: Product[] = [
         {
           barcode: "6281100115021",
           name: "بواجي دينسو أصلية تويوتا (طقم 4 حبات)",
@@ -236,6 +249,7 @@ export async function seedDemoDataIfNeeded(): Promise<boolean> {
         await addRecord("products", prod);
       }
       itemsAdded = true;
+    }
     }
 
     return itemsAdded;
