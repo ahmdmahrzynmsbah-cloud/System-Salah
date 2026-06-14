@@ -109,24 +109,18 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
     try {
       const allUsers = await getAllRecords("users");
 
-      // Filter to match only employee accounts for quick login
-      const matchedUsers = allUsers.filter(u => u.role === 'employee' && u.password?.trim() === password.trim());
-      // Check if password matches any admin accounts
-      const isAdminPassword = allUsers.some(u => u.role === 'admin' && u.password?.trim() === password.trim());
+      // Find any user matching the password
+      const matchedUsers = allUsers.filter(u => u.password?.trim() === password.trim());
 
       if (matchedUsers.length === 1) {
         const matched = matchedUsers[0];
         onToast(`مرحباً بك ${matched.username}! تم تسجيل الدخول الآمن بنجاح`, "success");
         onLoginSuccess({ username: matched.username, role: matched.role });
-        localStorage.setItem("autoPartsUser", JSON.stringify({ username: matched.username, role: matched.role }));
+        sessionStorage.setItem("autoPartsUser", JSON.stringify({ username: matched.username, role: matched.role }));
       } else if (matchedUsers.length > 1) {
-        // Conflict! Two employees have the same password
+        // Conflict! Multiple users have the same password
         setAmbiguousUsers(matchedUsers);
         onToast("تم العثور على عدة حسابات بنفس الرمز السري، اختر حسابك للمتابعة", "warning");
-      } else if (isAdminPassword) {
-        // User entered admin password in the employee quick login mode
-        onToast("هذا الرقم السري خاص بحساب المشرف. يرجى تسجيل الدخول من تبويب (دخول المشرف) بالأعلى باستخدام اسم المستخدم وكلمة المرور.", "warning");
-        setPassword('');
       } else {
         onToast("الرمز السري غير صحيح أو غير مسجل بالمنظومة!", "error");
         setPassword('');
@@ -183,7 +177,7 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
       if (matched) {
         onToast(`مرحباً بك ${matched.username}! تم الدخول بنجاح`, "success");
         onLoginSuccess({ username: matched.username, role: matched.role });
-        localStorage.setItem("autoPartsUser", JSON.stringify({ username: matched.username, role: matched.role }));
+        sessionStorage.setItem("autoPartsUser", JSON.stringify({ username: matched.username, role: matched.role }));
       } else {
         onToast("اسم المستخدم أو كلمة المرور غير صحيحة!", "error");
       }
@@ -199,7 +193,7 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
   const selectConflictingUser = (user: UserDB) => {
     onToast(`تم تسجيل الدخول بصفتك: ${user.username}`, "success");
     onLoginSuccess({ username: user.username, role: user.role });
-    localStorage.setItem("autoPartsUser", JSON.stringify({ username: user.username, role: user.role }));
+    sessionStorage.setItem("autoPartsUser", JSON.stringify({ username: user.username, role: user.role }));
   };
 
   // Soft numeric PIN pad clicker
@@ -232,30 +226,7 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
           </div>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex bg-gray-100 p-1 rounded-2xl">
-          <button
-            type="button"
-            onClick={() => { setLoginMode('quick'); setAmbiguousUsers([]); }}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              loginMode === 'quick' ? 'bg-white text-[#2E86AB] shadow-xs' : 'text-gray-500 hover:text-gray-900'
-            }`}
-          >
-            <Users size={14} />
-            دخول الموظفين
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => { setLoginMode('standard'); setAmbiguousUsers([]); }}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              loginMode === 'standard' ? 'bg-white text-[#2E86AB] shadow-xs' : 'text-gray-500 hover:text-gray-900'
-            }`}
-          >
-            <ShieldCheck size={14} />
-            دخول المشرف
-          </button>
-        </div>
+        {/* Password Login UI */}
 
         {/* Conflict popup dialogue */}
         {ambiguousUsers.length > 0 && (
@@ -285,120 +256,20 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
           </div>
         )}
 
-        {/* 1. Employee Login (Username + Password) */}
-        {loginMode === 'quick' && ambiguousUsers.length === 0 && (
-          <form onSubmit={(e) => handleRoleLogin(e, 'employee')} className="space-y-4">
+        {/* Unified Password-Only Login */}
+        {ambiguousUsers.length === 0 && (
+          <form onSubmit={handleQuickLogin} className="space-y-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-gray-600 text-xs font-bold leading-5 flex items-center gap-1">
-                <User size={13} className="text-[#2E86AB]" />
-                اسم المستخدم
+                <Lock size={13} className="text-[#2E86AB]" />
+                الرقم السري أو كلمة المرور
               </label>
               <input
                 ref={quickInputRef}
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="أدخل اسم المستخدم للموظف..."
-                className="w-full px-4 py-2.5 border border-gray-200 outline-hidden rounded-xl text-sm font-semibold focus:border-[#2E86AB]"
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-gray-600 text-xs font-bold leading-5 flex items-center gap-1">
-                <Lock size={13} className="text-[#2E86AB]" />
-                كلمة المرور
-              </label>
-              <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="أدخل كلمة المرور الخاصة بك..."
-                className="w-full px-4 py-2.5 border border-gray-200 outline-hidden rounded-xl text-sm font-semibold focus:border-[#2E86AB]"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 bg-[#2E86AB] hover:bg-[#1E2A3A] transition-all text-white font-extrabold rounded-2xl text-sm cursor-pointer shadow-md flex items-center justify-center gap-2 active:scale-98"
-            >
-              <LogIn size={16} />
-              {isLoading ? 'جاري التحقق من الهوية...' : 'تسجيل دخول الموظف'}
-            </button>
-          </form>
-        )}
-
-        {/* 2. Standard Traditional Username/Password login login */}
-        {loginMode === 'standard' && ambiguousUsers.length === 0 && (
-          <form onSubmit={(e) => handleRoleLogin(e, 'admin')} className="space-y-4">
-            
-            {/* Quick Supervisor Profile badges */}
-            {users.filter(u => u.role === 'admin').length > 0 && (
-              <div className="space-y-2 bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100">
-                <label className="text-[11px] text-gray-500 font-bold block mb-1">
-                  اختر حساب المشرف من هنا للسرعة:
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {users.filter(u => u.role === 'admin').map((u) => {
-                    const isSelected = username.toLowerCase() === u.username.toLowerCase();
-                    return (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => {
-                          setUsername(u.username);
-                          setTimeout(() => {
-                            standardPasswordRef.current?.focus();
-                          }, 50);
-                        }}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          isSelected 
-                            ? 'border-[#2E86AB] bg-blue-50/50 text-[#2E86AB] ring-2 ring-[#2E86AB]/10 shadow-xs' 
-                            : 'border-gray-200 hover:bg-gray-50 bg-white text-gray-700'
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[9px] ${
-                          isSelected ? 'bg-[#2E86AB] text-white' : 'bg-gray-200 text-gray-600'
-                        }`}>
-                          {u.username.substring(0, 2).toUpperCase()}
-                        </div>
-                        <span>{u.username}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-gray-600 text-xs font-bold leading-5 flex items-center gap-1">
-                <User size={13} className="text-[#2E86AB]" />
-                اسم المستخدم
-              </label>
-              <input
-                ref={standardInputRef}
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="أدخل اسم المستخدم (مثال: admin)"
-                className="w-full px-4 py-2.5 border border-gray-200 outline-hidden rounded-xl text-sm font-semibold focus:border-[#2E86AB]"
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-gray-600 text-xs font-bold leading-5 flex items-center gap-1">
-                <Lock size={13} className="text-[#2E86AB]" />
-                كلمة المرور
-              </label>
-              <input
-                ref={standardPasswordRef}
-                type="password"
-                value={standardPassword}
-                onChange={(e) => setStandardPassword(e.target.value)}
-                placeholder="أدخل الباسورد الخاص بك..."
+                placeholder="أدخل الرمز السري للوصول..."
                 className="w-full px-4 py-2.5 border border-gray-200 outline-hidden rounded-xl text-sm font-semibold focus:border-[#2E86AB]"
                 required
               />
@@ -410,7 +281,7 @@ export default function Login({ onLoginSuccess, onToast }: LoginProps) {
               className="w-full py-3 bg-[#1E2A3A] hover:bg-[#2E86AB] transition-all text-white font-extrabold rounded-xl text-sm cursor-pointer shadow-md flex items-center justify-center gap-2"
             >
               <LogIn size={16} />
-              {isLoading ? 'جاري التحقق من المشرف...' : 'دخول حساب المشرف'}
+              {isLoading ? 'جاري التحقق من الهوية...' : 'تسجيل الدخول'}
             </button>
           </form>
         )}

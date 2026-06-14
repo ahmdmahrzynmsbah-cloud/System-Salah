@@ -20,7 +20,6 @@ import {
   BadgeInfo,
   Check,
   ShoppingBag,
-  Trash2,
   Edit
 } from 'lucide-react';
 import { 

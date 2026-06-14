@@ -141,12 +141,12 @@ export default function App() {
       await loadSettings();
 
       // 3. Restore session if stored
-      const savedUser = localStorage.getItem("autoPartsUser");
+      const savedUser = sessionStorage.getItem("autoPartsUser");
       if (savedUser) {
         try {
           setCurrentUser(JSON.parse(savedUser));
         } catch (_) {
-          localStorage.removeItem("autoPartsUser");
+          sessionStorage.removeItem("autoPartsUser");
         }
       }
     } catch (err) {
@@ -224,13 +224,13 @@ export default function App() {
   // Handle active login
   const handleLoginSuccess = (user: { username: string; role: 'admin' | 'employee' }) => {
     setCurrentUser(user);
-    localStorage.setItem("autoPartsUser", JSON.stringify(user));
+    sessionStorage.setItem("autoPartsUser", JSON.stringify(user));
   };
 
   // Handle logout
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.removeItem("autoPartsUser");
+    sessionStorage.removeItem("autoPartsUser");
     setActiveTab('dashboard');
     showToast("تم تسجيل الخروج بنجاح", "success");
   };
