@@ -474,6 +474,15 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
     ));
   };
 
+  const updateCartPrice = (barcode: string, newPrice: number) => {
+    if (newPrice < 0) return;
+    setCartItems(cartItems.map(item => 
+      item.barcode === barcode
+        ? { ...item, sellingPrice: newPrice, total: item.quantity * newPrice }
+        : item
+    ));
+  };
+
   const removeFromCart = (barcode: string) => {
     setCartItems(cartItems.filter(item => item.barcode !== barcode));
     onToast("تم حذف العنصر من الفاتورة", "warning");
@@ -862,7 +871,20 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                         <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
                           <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded-sm">{item.barcode}</span>
                           <span>|</span>
-                          <span>سعر الحبة: {item.sellingPrice} ج.م</span>
+                          <span className="flex items-center gap-1.5 bg-emerald-50/50 px-2.5 py-1 rounded-lg border border-emerald-100 hover:border-emerald-300 transition-colors group">
+                            <span className="text-emerald-700 font-medium flex items-center gap-1"><Edit size={12} className="text-emerald-500" /> السعر:</span> 
+                            <div className="relative flex items-center shadow-xs">
+                              <input 
+                                type="number" 
+                                value={item.sellingPrice || ''}
+                                onChange={(e) => updateCartPrice(item.barcode, Number(e.target.value))}
+                                className="w-20 text-center bg-white border border-emerald-200 focus:border-emerald-500 rounded-md font-mono text-emerald-900 font-black focus:outline-none focus:ring-2 focus:ring-emerald-500/20 py-0.5 transition-all"
+                                min={0}
+                                step="any"
+                              />
+                            </div>
+                            <span className="text-emerald-600 font-bold text-[10px]">ج.م</span>
+                          </span>
                         </div>
                       </div>
 

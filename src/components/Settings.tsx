@@ -12,13 +12,15 @@ import {
   CheckCircle,
   Clock,
   Printer,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   getAllRecords, 
   addRecord, 
   deleteRecord, 
   updateRecord, 
+  clearAllCollections,
   AppSettings, 
   User as UserDB
 } from '../db';
@@ -70,6 +72,10 @@ export default function Settings({
   // Change password inputs
   const [oldPassword, setOldPassword] = useState('');
   const [newPasswordCurrent, setNewPasswordCurrent] = useState('');
+
+  // Reset system inputs
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetCode, setResetCode] = useState('');
 
   useEffect(() => {
     loadSettingsData();
@@ -301,6 +307,27 @@ export default function Settings({
     }
   };
 
+  const handleResetSystem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetCode !== '0000') {
+      onToast("رمز التأكيد غير صحيح", "error");
+      return;
+    }
+    
+    try {
+      await clearAllCollections();
+      await onAddLog('system', "تصفير جميع البيانات والعمليات في النظام بناءً على طلب المشرف", 0);
+      onToast("تم تصفير النظام بأكمله بنجاح", "success");
+      setShowResetConfirm(false);
+      setResetCode('');
+      // Wait a moment then reload to make sure DB is fresh
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (e) {
+      console.error(e);
+      onToast("حدث خطأ أثناء تصفير النظام", "error");
+    }
+  };
+
   return (
     <div className="space-y-6" id="settings-area-container">
       
@@ -501,6 +528,25 @@ export default function Settings({
               استخراج النسخة الاحتياطية الكاملة (JSON)
             </button>
           </div>
+
+          {/* SYSTEM RESET PANEL */}
+          {currentUser?.role === 'admin' && (
+            <div className="bg-white p-5 rounded-2xl shadow-xs border border-rose-100 space-y-4">
+              <h3 className="font-bold text-rose-600 text-base border-b border-rose-100 pb-2 flex items-center gap-2">
+                <AlertTriangle size={18} />
+                تصفير وإعادة ضبط النظام
+              </h3>
+              <p className="text-xs text-rose-500/80 leading-normal">
+                حذف جميع البيانات المتعلقة بالمنتجات، المبيعات، الفواتير، الديون والموردين بشكل نهائي. تأكد من أخذ نسخة احتياطية أولاً! هذه العملية لا رجعة فيها.
+              </p>
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="px-5 py-3 bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 font-bold rounded-xl text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 w-full border border-rose-200"
+              >
+                تصفير السيستم (مسح الكاش)
+              </button>
+            </div>
+          )}
 
         </div>
 
@@ -711,6 +757,54 @@ export default function Settings({
               >
                 تأكيد الحذف
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Reset System Confirmation */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 flex flex-col animate-in fade-in zoom-in duration-200">
+            <div className="p-4 bg-rose-50 border-b border-rose-100 flex items-center gap-2 text-rose-600">
+              <AlertTriangle size={20} />
+              <h3 className="font-bold">تحذير أمني خطير!</h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-gray-600 font-medium leading-relaxed">
+                أنت على وشك تصفير ومسح جميع بيانات قواعد داتا النظام نهائياً (الحركات والمخزون والموردين والخزنة).
+                إذا كنت متأكداً يرجى إدخال الرمز السري للتأكيد: <strong className="text-gray-900 bg-gray-100 px-1 rounded">0000</strong>
+              </p>
+              
+              <form onSubmit={handleResetSystem}>
+                <input
+                  type="text"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value)}
+                  placeholder="أدخل الرمز للتأكيد"
+                  className="w-full px-4 py-3 border border-rose-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none rounded-xl text-center font-mono text-lg font-bold"
+                  dir="ltr"
+                />
+                
+                <div className="mt-6 flex gap-2 justify-end border-t pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowResetConfirm(false);
+                      setResetCode('');
+                    }}
+                    className="flex-1 py-2.5 border border-gray-200 text-gray-500 font-bold rounded-xl text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    تراجع وإلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-rose-500 text-white font-bold rounded-xl text-sm hover:bg-rose-600 shadow-md shadow-rose-500/20 transition-all cursor-pointer"
+                  >
+                    نعم، مسح كل شيء!
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

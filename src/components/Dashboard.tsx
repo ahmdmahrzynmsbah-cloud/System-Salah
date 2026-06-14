@@ -7,7 +7,8 @@ import {
   CreditCard,
   History,
   TrendingDown,
-  UserCheck
+  UserCheck,
+  Wallet
 } from 'lucide-react';
 import { subscribeToStore, Product, Invoice, Transaction, Debt } from '../db';
 
@@ -25,6 +26,7 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
   // Stats
   const [totalProducts, setTotalProducts] = useState(0);
   const [todaySales, setTodaySales] = useState(0);
+  const [todayCash, setTodayCash] = useState(0);
   const [totalDebts, setTotalDebts] = useState(0);
   const [lowStockCount, setLowStockCount] = useState(0);
 
@@ -42,10 +44,13 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       const yyyy = today.getFullYear();
       const todayStr = `${dd}/${mm}/${yyyy}`;
-      const salesToday = data
-        .filter((inv) => inv.date.startsWith(todayStr))
-        .reduce((sum, inv) => sum + inv.total, 0);
+      
+      const todayInvoices = data.filter((inv) => inv.date.startsWith(todayStr));
+      const salesToday = todayInvoices.reduce((sum, inv) => sum + inv.total, 0);
+      const cashToday = todayInvoices.reduce((sum, inv) => sum + inv.paidAmount, 0);
+      
       setTodaySales(salesToday);
+      setTodayCash(cashToday);
     });
 
     const unsubTransactions = subscribeToStore("transactions", (data: Transaction[]) => {
@@ -102,8 +107,8 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
         </div>
       </div>
 
-      {/* Grid of 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* Grid of Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Card 1: Total Products */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
@@ -126,7 +131,7 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
               {todaySales.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ج.م</span>
             </h3>
             <span className="text-xs text-[#4CAF50] bg-emerald-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
-              سداد نقدي وآجل
+              النقدي والآجل
             </span>
           </div>
           <div className="w-12 h-12 bg-emerald-50 text-[#4CAF50] rounded-xl flex items-center justify-center">
@@ -134,7 +139,23 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
           </div>
         </div>
 
-        {/* Card 3: Pending Debt */}
+        {/* Card 3: Drawer Cash */}
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
+          <div>
+            <p className="text-gray-400 text-sm font-medium">الموجود في الدرج</p>
+            <h3 className="text-3xl font-extrabold text-[#2E86AB] mt-2 font-mono">
+              {todayCash.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ج.م</span>
+            </h3>
+            <span className="text-xs text-[#2E86AB] bg-blue-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
+              محصلات اليوم النقدية
+            </span>
+          </div>
+          <div className="w-12 h-12 bg-blue-50 text-[#2E86AB] rounded-xl flex items-center justify-center">
+            <Wallet size={24} />
+          </div>
+        </div>
+
+        {/* Card 4: Pending Debt */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-gray-400 text-sm font-medium">إجمالي الديون المعلقة</p>
@@ -150,7 +171,7 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
           </div>
         </div>
 
-        {/* Card 4: Low Stock Products */}
+        {/* Card 5: Low Stock Products */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
             <p className="text-gray-400 text-sm font-medium">أوشكت على النفاد</p>
