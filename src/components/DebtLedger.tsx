@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { 
   Search, 
   CreditCard, 
@@ -10,7 +11,8 @@ import {
   FileText,
   PlusCircle,
   Calendar,
-  Check
+  Check,
+  Download
 } from 'lucide-react';
 import { 
   getAllRecords, 
@@ -150,6 +152,50 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
     );
   };
 
+  const handleExportToExcel = () => {
+    if (debts.length === 0) {
+      onToast("لا توجد مديونيات لتصديرها", "warning");
+      return;
+    }
+
+    const rows: Record<string, string | number>[] = [];
+
+    // Sort debts by totalAmount descending for professional grouping
+    const sortedDebts = [...debts].sort((a, b) => b.totalDebt - a.totalDebt);
+
+    sortedDebts.forEach(d => {
+      rows.push({
+        'اسم العميل': d.customerName,
+        'رقم الهاتف': d.customerPhone || 'غير متوفر',
+        'تاريخ آخر تعامل': d.lastInvoiceDate || 'غير متوفر',
+        'إجمالي المديونية (ج.م)': d.totalDebt
+      });
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(rows, { header: ['اسم العميل', 'رقم الهاتف', 'تاريخ آخر تعامل', 'إجمالي المديونية (ج.م)'] });
+    
+    // Set RTL direction for the worksheet
+    if(!worksheet['!views']) worksheet['!views'] = [];
+    worksheet['!views'].push({ rightToLeft: true });
+
+    // Auto-size columns loosely
+    const colWidths = [
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 25 }
+    ];
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "ملخص المديونيات");
+    
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `سجل_مديونيات_العملاء_${dateStr}.xlsx`);
+    
+    onToast("تم تحميل تقرير المديونيات كملف إكسيل بنجاح", "success");
+  };
+
   return (
     <div className="space-y-6">
       
@@ -173,7 +219,7 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
       </div>
 
       {/* Control Actions (Searching) */}
-      <div className="bg-white p-4 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-2xl shadow-xs border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
@@ -186,9 +232,17 @@ export default function DebtLedger({ onAddLog, currentUser, onToast }: DebtLedge
             <Search size={18} />
           </span>
         </div>
-        <span className="text-xs font-semibold text-gray-400">
-          إجمالي المسجلين بالدفتر: {debts.length} عملاء
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-semibold text-gray-400 hidden md:inline">
+            إجمالي المسجلين بالدفتر: {debts.length} عملاء
+          </span>
+          <button
+            onClick={handleExportToExcel}
+            className="px-4 py-2 bg-emerald-50 text-emerald-700 font-bold rounded-xl text-sm hover:bg-emerald-100 transition-colors flex items-center gap-2 cursor-pointer border border-emerald-100 shadow-xs"
+          >
+            <Download size={16} /> تصدير إكسيل
+          </button>
+        </div>
       </div>
 
       {/* Debts Table Block */}
