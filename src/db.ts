@@ -141,8 +141,16 @@ export async function getByIndex(store: string, indexName: string, value: any): 
   return all.find(item => item[indexName] === value);
 }
 
+export interface Expense {
+  id?: string;
+  date: string;
+  description: string;
+  amount: number;
+  username: string;
+}
+
 export async function clearAllCollections(): Promise<void> {
-  const stores = ["products", "invoices", "debtLedger", "transactions", "suppliers"];
+  const stores = ["products", "invoices", "debtLedger", "transactions", "suppliers", "expenses"];
   
   for (const store of stores) {
     const colRef = collection(db, store);

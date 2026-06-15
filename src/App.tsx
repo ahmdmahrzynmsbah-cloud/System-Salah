@@ -18,7 +18,9 @@ import {
   AlertTriangle,
   XCircle,
   Clock,
-  Truck
+  Truck,
+  Banknote,
+  Calendar
 } from 'lucide-react';
 import { 
   seedDemoDataIfNeeded, 
@@ -36,6 +38,8 @@ import DebtLedger from './components/DebtLedger';
 import TransactionsLog from './components/TransactionsLog';
 import Suppliers from './components/Suppliers';
 import Settings from './components/Settings';
+import Expenses from './components/Expenses';
+import DailyReports from './components/DailyReports';
 
 interface Toast {
   id: number;
@@ -345,6 +349,8 @@ export default function App() {
     { id: 'suppliers', label: 'الموردين', icon: Truck },
     { id: 'debts', label: 'دفتر المديونيات والذمم', icon: CreditCard },
     { id: 'transactions', label: 'سجل العمليات العام', icon: History },
+    { id: 'expenses', label: 'مصروفات جانبية', icon: Banknote },
+    { id: 'daily-reports', label: 'التقارير اليومية', icon: Calendar },
     { id: 'settings', label: 'إعدادات النظام والطباعة', icon: SettingsIcon },
   ];
 
@@ -602,6 +608,21 @@ export default function App() {
           {activeTab === 'transactions' && currentRole === 'admin' && (
             <TransactionsLog 
               onToast={showToast} 
+            />
+          )}
+
+          {activeTab === 'expenses' && currentRole === 'admin' && (
+            <Expenses 
+              onToast={showToast}
+              currentUser={currentUser}
+              onAddLog={handleAddLog}
+            />
+          )}
+
+          {activeTab === 'daily-reports' && currentRole === 'admin' && (
+            <DailyReports 
+              onToast={showToast}
+              currentUser={currentUser}
             />
           )}
 

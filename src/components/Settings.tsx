@@ -543,7 +543,7 @@ export default function Settings({
                 onClick={() => setShowResetConfirm(true)}
                 className="px-5 py-3 bg-rose-50 hover:bg-rose-500 hover:text-white text-rose-600 font-bold rounded-xl text-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 w-full border border-rose-200"
               >
-                تصفير السيستم (مسح الكاش)
+                تصفير السيستم (حذف كل البيانات)
               </button>
             </div>
           )}

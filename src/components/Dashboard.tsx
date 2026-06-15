@@ -27,6 +27,8 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
   const [totalProducts, setTotalProducts] = useState(0);
   const [todaySales, setTodaySales] = useState(0);
   const [todayCash, setTodayCash] = useState(0);
+  const [todayDebt, setTodayDebt] = useState(0);
+  const [todayExpenses, setTodayExpenses] = useState(0);
   const [totalDebts, setTotalDebts] = useState(0);
   const [lowStockCount, setLowStockCount] = useState(0);
 
@@ -48,9 +50,25 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
       const todayInvoices = data.filter((inv) => inv.date.startsWith(todayStr));
       const salesToday = todayInvoices.reduce((sum, inv) => sum + inv.total, 0);
       const cashToday = todayInvoices.reduce((sum, inv) => sum + inv.paidAmount, 0);
+      const debtToday = todayInvoices.reduce((sum, inv) => sum + inv.remainingAmount, 0);
       
       setTodaySales(salesToday);
       setTodayCash(cashToday);
+      setTodayDebt(debtToday);
+    });
+
+    const unsubExpenses = subscribeToStore("expenses", (data: any[]) => {
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, '0');
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const yyyy = today.getFullYear();
+      const todayStr = `${dd}/${mm}/${yyyy}`;
+      
+      const expsToday = data
+        .filter((exp) => exp.date.startsWith(todayStr))
+        .reduce((sum, exp) => sum + exp.amount, 0);
+        
+      setTodayExpenses(expsToday);
     });
 
     const unsubTransactions = subscribeToStore("transactions", (data: Transaction[]) => {
@@ -65,6 +83,7 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
     return () => {
       unsubProducts();
       unsubInvoices();
+      unsubExpenses();
       unsubTransactions();
       unsubDebts();
     };
@@ -108,80 +127,82 @@ export default function Dashboard({ onNavigate, currentUser }: DashboardProps) {
       </div>
 
       {/* Grid of Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Card 1: Total Products */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <p className="text-gray-400 text-sm font-medium">إجمالي القطع بالمستودع</p>
-            <h3 className="text-3xl font-extrabold text-[#2D3142] mt-2 font-mono">{totalProducts}</h3>
-            <span className="text-xs text-blue-500 bg-blue-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
-              مختلف التصنيفات
-            </span>
+            <p className="text-gray-400 text-xs font-medium">القطع بالمستودع</p>
+            <h3 className="text-2xl font-extrabold text-[#2D3142] mt-1 font-mono">{totalProducts}</h3>
           </div>
-          <div className="w-12 h-12 bg-blue-50 text-[#2E86AB] rounded-xl flex items-center justify-center">
-            <Package size={24} />
+          <div className="w-10 h-10 bg-blue-50 text-[#2E86AB] rounded-xl flex items-center justify-center">
+            <Package size={20} />
           </div>
         </div>
 
         {/* Card 2: Today Sales */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <p className="text-gray-400 text-sm font-medium">مبيعات اليوم</p>
-            <h3 className="text-3xl font-extrabold text-[#4CAF50] mt-2 font-mono">
-              {todaySales.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ج.م</span>
+            <p className="text-gray-400 text-xs font-medium">مبيعات اليوم (الإجمالي)</p>
+            <h3 className="text-2xl font-extrabold text-[#4CAF50] mt-1 font-mono">
+              {todaySales.toLocaleString('en-US')} <span className="text-[10px] text-gray-500 font-sans font-normal">ج.م</span>
             </h3>
-            <span className="text-xs text-[#4CAF50] bg-emerald-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
-              النقدي والآجل
-            </span>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 text-[#4CAF50] rounded-xl flex items-center justify-center">
-            <TrendingUp size={24} />
+          <div className="w-10 h-10 bg-emerald-50 text-[#4CAF50] rounded-xl flex items-center justify-center">
+            <TrendingUp size={20} />
           </div>
         </div>
 
-        {/* Card 3: Drawer Cash */}
+        {/* Card 3: Today Debt */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <p className="text-gray-400 text-sm font-medium">الموجود في الدرج</p>
-            <h3 className="text-3xl font-extrabold text-[#2E86AB] mt-2 font-mono">
-              {todayCash.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ج.م</span>
+            <p className="text-gray-400 text-xs font-medium">الديون المعلقة (اليوم)</p>
+            <h3 className="text-2xl font-extrabold text-amber-500 mt-1 font-mono">
+              {todayDebt.toLocaleString('en-US')} <span className="text-[10px] text-gray-500 font-sans font-normal">ج.م</span>
             </h3>
-            <span className="text-xs text-[#2E86AB] bg-blue-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
-              محصلات اليوم النقدية
-            </span>
           </div>
-          <div className="w-12 h-12 bg-blue-50 text-[#2E86AB] rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center">
+            <TrendingDown size={20} />
+          </div>
+        </div>
+
+        {/* Card 4: Drawer Cash */}
+        <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between relative overflow-hidden ring-1 ring-blue-100">
+          <div className="relative z-10">
+            <p className="text-[#2E86AB] text-xs font-bold">الموجود في الدرج</p>
+            <h3 className="text-2xl font-extrabold text-[#2E86AB] mt-1 font-mono">
+              {(todayCash - todayExpenses).toLocaleString('en-US')} <span className="text-[10px] text-blue-500 font-sans font-normal">ج.م</span>
+            </h3>
+            <p className="text-[9px] text-blue-400 mt-1">
+              المبيعات الكاش - المصروفات: {todayExpenses} ج
+            </p>
+          </div>
+          <div className="w-12 h-12 bg-blue-100/50 text-[#2E86AB] rounded-xl flex items-center justify-center relative z-10">
             <Wallet size={24} />
           </div>
+          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-l from-blue-50/50 to-transparent pointer-events-none"></div>
         </div>
 
-        {/* Card 4: Pending Debt */}
+        {/* Card 5: Pending Debt (All time) */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <p className="text-gray-400 text-sm font-medium">إجمالي الديون المعلقة</p>
-            <h3 className="text-3xl font-extrabold text-[#E63946] mt-2 font-mono">
-              {totalDebts.toLocaleString('en-US')} <span className="text-xs text-gray-500 font-sans font-normal">ج.م</span>
+            <p className="text-gray-400 text-xs font-medium">الديون بكل الأيام</p>
+            <h3 className="text-2xl font-extrabold text-[#E63946] mt-1 font-mono">
+              {totalDebts.toLocaleString('en-US')} <span className="text-[10px] text-gray-500 font-sans font-normal">ج.م</span>
             </h3>
-            <span className="text-xs text-[#E63946] bg-rose-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
-              ذمم العملاء المستحقة
-            </span>
           </div>
-          <div className="w-12 h-12 bg-rose-50 text-[#E63946] rounded-xl flex items-center justify-center">
-            <CreditCard size={24} />
+          <div className="w-10 h-10 bg-rose-50 text-[#E63946] rounded-xl flex items-center justify-center">
+            <CreditCard size={20} />
           </div>
         </div>
 
-        {/* Card 5: Low Stock Products */}
+        {/* Card 6: Low Stock Products */}
         <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 flex items-center justify-between">
           <div>
-            <p className="text-gray-400 text-sm font-medium">أوشكت على النفاد</p>
-            <h3 className="text-3xl font-extrabold text-[#FF9800] mt-2 font-mono">{lowStockCount}</h3>
-            <span className="text-xs text-[#FF9800] bg-amber-50 px-2 py-0.5 rounded-sm mt-2 inline-block font-medium">
-              أقل من 5 قطع بالمخزن
-            </span>
+            <p className="text-gray-400 text-xs font-medium">أوشكت على النفاد</p>
+            <h3 className="text-2xl font-extrabold text-[#FF9800] mt-1 font-mono">{lowStockCount}</h3>
           </div>
-          <div className="w-12 h-12 bg-amber-50 text-[#FF9800] rounded-xl flex items-center justify-center">
-            <AlertTriangle size={24} />
+          <div className="w-10 h-10 bg-amber-50 text-[#FF9800] rounded-xl flex items-center justify-center">
+            <AlertTriangle size={20} />
           </div>
         </div>
       </div>
