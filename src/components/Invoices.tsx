@@ -58,6 +58,10 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
   // Search invoice state
   const [searchInvoiceQuery, setSearchInvoiceQuery] = useState('');
 
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [customersList, setCustomersList] = useState<{name: string, phone: string}[]>([]);
+  const [isManualCustomer, setIsManualCustomer] = useState(false);
+
   // active POS invoice draft
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -192,8 +196,20 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
     try {
       const allSpecs = await getAllRecords("products");
       const allBills = await getAllRecords("invoices");
+      const allDebts = await getAllRecords("debtLedger") as Debt[];
+      
       setProducts(allSpecs);
       setInvoices(allBills);
+      setDebts(allDebts);
+
+      // Extract unique customers
+      const uniqueCustomersMap = new Map<string, {name: string, phone: string}>();
+      allDebts.forEach(d => {
+        if (!uniqueCustomersMap.has(d.customerName)) {
+           uniqueCustomersMap.set(d.customerName, { name: d.customerName, phone: d.customerPhone });
+        }
+      });
+      setCustomersList(Array.from(uniqueCustomersMap.values()));
 
       // Generate simple sequential invoice number
       const numCode = allBills.length + 1;
@@ -940,17 +956,49 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
             {/* Customer Information (Optional for Cash, required for Debts) */}
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1">
-                  <User size={12} className="text-gray-400" />
-                  اسم العميل
-                </label>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="مثال: خالد الحربي"
-                  className="w-full px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                    <User size={12} className="text-gray-400" />
+                    اسم العميل
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                       setIsManualCustomer(!isManualCustomer);
+                       setCustomerName('');
+                       setCustomerPhone('');
+                    }}
+                    className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-sm hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                  >
+                    {isManualCustomer ? 'اختيار العميل 🔽' : 'كتابة يدوي ✍️'}
+                  </button>
+                </div>
+                
+                {isManualCustomer ? (
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="مثال: خالد الحربي"
+                    className="w-full px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm transition-all"
+                  />
+                ) : (
+                  <select 
+                    value={customerName}
+                    onChange={(e) => {
+                      const selected = e.target.value;
+                      setCustomerName(selected);
+                      const customerInfo = customersList.find(c => c.name === selected);
+                      setCustomerPhone(customerInfo ? customerInfo.phone : '');
+                    }}
+                    className="w-full px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm bg-white transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">اختيار عميل مسجل...</option>
+                    {customersList.map((c, i) => (
+                      <option key={i} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -963,8 +1011,9 @@ export default function Invoices({ onAddLog, currentUser, onToast, shopSettings 
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="مثال: 055xxxxxxx"
-                  className="w-full px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-mono text-right"
+                  className="w-full px-3 py-2 border border-gray-200 focus:border-[#2E86AB] outline-hidden rounded-xl text-sm font-mono text-right transition-all bg-white"
                   maxLength={12}
+                  disabled={!isManualCustomer && !!customerName}
                 />
               </div>
             </div>
